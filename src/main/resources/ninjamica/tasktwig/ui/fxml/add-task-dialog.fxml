@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.ButtonType?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.ChoiceBox?>
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.DialogPane?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Spinner?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.ToggleButton?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<DialogPane stylesheets="@dark-theme.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1">
+   <buttonTypes>
+      <ButtonType fx:constant="OK" />
+      <ButtonType fx:constant="CANCEL" />
+   </buttonTypes>
+   <content>
+      <VBox fx:id="contentVbox" spacing="15.0">
+         <children>
+            <AnchorPane fx:id="namePane">
+               <children>
+                  <TextField fx:id="nameTextField" layoutX="92.0" prefHeight="26.0" prefWidth="189.0" />
+                  <Label layoutY="4.0" text="Name" />
+               </children>
+            </AnchorPane>
+            <AnchorPane fx:id="typePane">
+               <children>
+                  <ChoiceBox fx:id="typeChoiceBox" layoutX="92.0" prefHeight="26.0" prefWidth="189.0" />
+                  <Label layoutY="4.0" text="Type" />
+               </children>
+            </AnchorPane>
+            <AnchorPane fx:id="dueDatePane">
+               <children>
+                  <DatePicker fx:id="dueDatePicker" layoutX="92.0" prefHeight="26.0" prefWidth="189.0" />
+                  <Label layoutY="4.0" text="Due Date" />
+               </children>
+            </AnchorPane>
+            <AnchorPane fx:id="dayOfWeekPane">
+               <children>
+                  <Label layoutY="3.0" text="Days" />
+                  <ToggleButton fx:id="dayMButton" layoutX="92.0" mnemonicParsing="false" prefWidth="27.0" text="M">
+                     <font>
+                        <Font size="11.0" />
+                     </font>
+                  </ToggleButton>
+                  <ToggleButton fx:id="dayTButton" layoutX="119.0" mnemonicParsing="false" prefWidth="27.0" text="T">
+                     <font>
+                        <Font size="11.0" />
+                     </font>
+                  </ToggleButton>
+                  <ToggleButton fx:id="dayWButton" layoutX="146.0" mnemonicParsing="false" prefWidth="27.0" text="W">
+                     <font>
+                        <Font size="11.0" />
+                     </font>
+                  </ToggleButton>
+                  <ToggleButton fx:id="dayThButton" layoutX="173.0" mnemonicParsing="false" text="Th">
+                     <font>
+                        <Font size="11.0" />
+                     </font>
+                  </ToggleButton>
+                  <ToggleButton fx:id="dayFButton" layoutX="200.0" mnemonicParsing="false" prefWidth="27.0" text="F">
+                     <font>
+                        <Font size="11.0" />
+                     </font>
+                  </ToggleButton>
+                  <ToggleButton fx:id="daySaButton" layoutX="227.0" mnemonicParsing="false" prefWidth="27.0" text="Sa">
+                     <font>
+                        <Font size="11.0" />
+                     </font>
+                  </ToggleButton>
+                  <ToggleButton fx:id="daySuButton" layoutX="254.0" mnemonicParsing="false" text="Su">
+                     <font>
+                        <Font size="11.0" />
+                     </font>
+                  </ToggleButton>
+               </children>
+            </AnchorPane>
+            <AnchorPane fx:id="dateOfMonthPane">
+               <children>
+                  <TextField fx:id="dateOfMonthField" layoutX="92.0" prefHeight="26.0" prefWidth="189.0" />
+                  <Label layoutY="4.0" text="Dates" />
+               </children>
+            </AnchorPane>
+            <AnchorPane fx:id="dueTimePane">
+               <children>
+                  <Spinner fx:id="dueTimeSpinner" layoutX="159.0" prefHeight="26.0" prefWidth="122.0" />
+                  <CheckBox fx:id="dueTimeCheckbox" layoutX="92.0" layoutY="5.0" mnemonicParsing="false" selected="true" text="no time">
+                     <font>
+                        <Font size="11.0" />
+                     </font>
+                  </CheckBox>
+                  <Label layoutY="4.0" text="Due Time" />
+               </children>
+            </AnchorPane>
+         </children>
+         <opaqueInsets>
+            <Insets />
+         </opaqueInsets>
+         <padding>
+            <Insets bottom="20.0" left="25.0" right="25.0" top="25.0" />
+         </padding>
+      </VBox>
+   </content>
+</DialogPane>

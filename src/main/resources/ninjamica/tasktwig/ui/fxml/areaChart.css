@@ -1,0 +1,11 @@
+.default-color0.chart-area-symbol { -fx-background-color: slateblue, slateblue; -fx-scale-x: 1.25; -fx-scale-y: 1.25 }
+
+.default-color0.chart-series-area-line { -fx-stroke: slateblue; -fx-stroke-width: 2px }
+
+.default-color0.chart-series-area-fill { -fx-fill: slateblue; -fx-opacity: 0.4 }
+
+.chart-horizontal-grid-lines { -fx-stroke: gray }
+.chart-vertical-grid-lines { -fx-stroke: gray }
+
+.axis-tick-mark { -fx-stroke: gray }
+.axis-minor-tick-mark { -fx-stroke: gray }

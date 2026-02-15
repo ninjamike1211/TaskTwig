@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.ButtonType?>
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.DialogPane?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Spinner?>
+<?import javafx.scene.layout.AnchorPane?>
+
+<DialogPane expanded="true" headerText="Finish Sleep" stylesheets="@dark-theme.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1">
+   <header>
+      <AnchorPane />
+   </header>
+   <buttonTypes>
+      <ButtonType fx:constant="CANCEL" />
+      <ButtonType fx:constant="OK" />
+   </buttonTypes>
+   <content>
+      <AnchorPane prefHeight="93.0" prefWidth="260.0">
+         <children>
+            <Spinner fx:id="timeSpinner" editable="true" layoutX="156.0" layoutY="19.0" prefHeight="26.0" prefWidth="106.0" />
+            <Label fx:id="timeLabel" alignment="CENTER_RIGHT" layoutX="14.0" layoutY="23.0" prefHeight="18.0" prefWidth="136.0" text="Select ____Time" textAlignment="RIGHT" />
+            <Label fx:id="dateLabel" alignment="CENTER_RIGHT" layoutX="14.0" layoutY="60.0" prefHeight="18.0" prefWidth="136.0" text="Select ____ Date" textAlignment="RIGHT" />
+            <DatePicker fx:id="dateSelector" layoutX="156.0" layoutY="56.0" prefHeight="26.0" prefWidth="106.0" />
+         </children>
+      </AnchorPane>
+   </content>
+</DialogPane>
