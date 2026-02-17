@@ -19,7 +19,7 @@ public class TaskTwigApplication extends Application {
         Scene scene = new Scene(fxmlLoader.load());
 //        scene.getRoot().setStyle("-fx-base:black");
 //        scene.getStylesheets().add(TaskTwigApplication.class.getResource("fxml/dark-theme.css").toExternalForm());
-        stage.setTitle("Hello!");
+        stage.setTitle("TaskTwig");
         stage.setScene(scene);
         stage.show();
 

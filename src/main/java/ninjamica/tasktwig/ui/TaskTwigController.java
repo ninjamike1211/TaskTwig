@@ -6,13 +6,18 @@ import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.chart.AreaChart;
+import javafx.scene.chart.LineChart;
+import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Callback;
+import javafx.util.StringConverter;
 import ninjamica.tasktwig.*;
 import ninjamica.tasktwig.task.*;
 
@@ -22,10 +27,13 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 public class TaskTwigController {
 
+    @FXML
+    private VBox sleepVBox;
     @FXML
     private Button sleepButton;
     @FXML
@@ -41,7 +49,15 @@ public class TaskTwigController {
     @FXML
     private TableColumn<Sleep, Float> sleepLengthCol;
     @FXML
-    private AreaChart<String, Float> sleepLineChart;
+    private BorderPane sleepLenChartPane;
+    @FXML
+    private BorderPane sleepTimeChartPane;
+    @FXML
+    private LineChart<String, Float> sleepTimeChart;
+    @FXML
+    private AreaChart<String, Float> sleepLenChart;
+    @FXML
+    private NumberAxis  sleepTimeNumAxis;
     @FXML
     private Button workoutButton;
     @FXML
@@ -69,16 +85,21 @@ public class TaskTwigController {
 
     private final TaskTwig twig = new TaskTwig();
     private Stage stage;
-    private final XYChart.Series<String, Float> sleepChartData = new XYChart.Series<>();
+    private final XYChart.Series<String, Float> sleepLenChartData = new XYChart.Series<>();
+    private final XYChart.Series<String, Float> sleepStartChartData = new XYChart.Series<>();
+    private final XYChart.Series<String, Float> sleepEndChartData = new XYChart.Series<>();
 
     private static final String darkStylesheet = TaskTwigController.class.getResource("fxml/dark-theme.css").toExternalForm();
     private static final DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("EEE M/d/yyyy");
     private static final DateTimeFormatter shortDateFormat = DateTimeFormatter.ofPattern("M/d");
     private static final DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("h:mm a");
     private static final String[] dayOfWeekShorthand = {"M", "T", "W", "Th", "F", "Sa", "Su"};
+    private static final LocalTime timeChartRefTime = LocalTime.of(12, 00);
 
     @FXML
     public void initialize() {
+
+        sleepVBox.getChildren().remove(sleepTimeChartPane);
 
         sleepDateCol.setCellValueFactory(sleep -> new SimpleObjectProperty<>(sleep.getValue().end().toLocalDate().minusDays(1)));
         sleepStartCol.setCellValueFactory(sleep -> new SimpleObjectProperty<>(sleep.getValue().start().toLocalTime()));
@@ -111,7 +132,22 @@ public class TaskTwigController {
         sleepTableView.setItems(FXCollections.observableList(new ArrayList<>(twig.sleepRecords().values())));
 
         sleepTableView.getSortOrder().add(sleepDateCol);
-        refillSleepChart();
+        sleepTimeNumAxis.setTickLabelFormatter(new StringConverter<Number>() {
+            @Override
+            public String toString(Number num) {
+                LocalTime time = LocalTime.of(12,0).minusMinutes((long)(num.floatValue() * 60));
+                return time.format(timeFormat);
+            }
+
+            @Override
+            public Number fromString(String time) {
+                LocalTime localTime = LocalTime.parse(time, timeFormat);
+                return localTime.until(timeChartRefTime, ChronoUnit.MINUTES) / 60f;
+            }
+        });
+        sleepStartChartData.setName("Sleep Start");
+        sleepEndChartData.setName("SleepEnd");  
+        refillSleepCharts();
 
         workoutDateCol.setCellValueFactory(workout -> new SimpleStringProperty(workout.getValue().start().toLocalDate().format(dateFormat)));
         workoutLengthCol.setCellValueFactory(workout -> new SimpleFloatProperty(workout.getValue().length().toSeconds() / 60f).asObject());
@@ -313,22 +349,51 @@ public class TaskTwigController {
         return  treeItem;
     }
 
+    @FXML
+    private void showSleepLenChart() {
+        sleepVBox.getChildren().remove(sleepTimeChartPane);
+        sleepVBox.getChildren().add(sleepLenChartPane);
+    }
+    
+    @FXML
+    private void showSleepTimeChart() {
+        sleepVBox.getChildren().remove(sleepLenChartPane);
+        sleepVBox.getChildren().add(sleepTimeChartPane);
+    }
+
+    private float convertTimeToChartNum(LocalTime time) {
+        float midnightRefTime = time.getHour() + (time.getMinute()/60f);
+
+        if(time.getHour() >= 18) {
+            return 12f + (24f - midnightRefTime);
+        }
+        else {
+            return 12f - midnightRefTime;
+        }
+    }
 
     private void refillSleepTable() {
         sleepTableView.setItems(FXCollections.observableList(new ArrayList<>(twig.sleepRecords().values())));
         sleepTableView.refresh();
 //        sleepTableView.getSortOrder().clear();
 //        sleepTableView.getSortOrder().add(sleepDateCol);
-        refillSleepChart();
+        refillSleepCharts();
     }
 
-    private void refillSleepChart() {
-        sleepChartData.getData().clear();
+    private void refillSleepCharts() {
+        sleepLenChartData.getData().clear();
+        sleepStartChartData.getData().clear();
+        sleepEndChartData.getData().clear();
         for (Map.Entry<LocalDate, Sleep> entry : twig.sleepRecords().entrySet()) {
-            sleepChartData.getData().add(new XYChart.Data<>(entry.getKey().format(shortDateFormat), entry.getValue().length().toMinutes()/60f));
+            String date = entry.getKey().format(shortDateFormat);
+            sleepLenChartData.getData().add(new XYChart.Data<>(date, entry.getValue().length().toMinutes()/60f));
+            sleepStartChartData.getData().add(new XYChart.Data<>(date, convertTimeToChartNum(entry.getValue().start().toLocalTime())));
+            sleepEndChartData.getData().add(new XYChart.Data<>(date, convertTimeToChartNum(entry.getValue().end().toLocalTime())));
         }
-        sleepLineChart.getData().clear();
-        sleepLineChart.getData().add(sleepChartData);
+        sleepLenChart.getData().clear();
+        sleepTimeChart.getData().clear();
+        sleepLenChart.getData().add(sleepLenChartData);
+        sleepTimeChart.getData().addAll(sleepStartChartData, sleepEndChartData);
     }
 
     private ObservableValue<String> genWorkoutExercises(Map<Exercise, Integer> exercises) {

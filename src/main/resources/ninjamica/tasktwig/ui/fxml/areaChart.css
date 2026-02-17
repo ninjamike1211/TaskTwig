@@ -1,8 +1,13 @@
-.default-color0.chart-area-symbol { -fx-background-color: slateblue, slateblue; -fx-scale-x: 1.25; -fx-scale-y: 1.25 }
-
+.default-color0.chart-area-symbol { -fx-background-color: slateblue, lightsteelblue ; -fx-scale-x: 1.5; -fx-scale-y: 1.5 }
 .default-color0.chart-series-area-line { -fx-stroke: slateblue; -fx-stroke-width: 2px }
-
 .default-color0.chart-series-area-fill { -fx-fill: slateblue; -fx-opacity: 0.4 }
+
+.default-color0.chart-line-symbol { -fx-background-color: chocolate, rgb(208, 173, 123) ; -fx-scale-x: 0.75; -fx-scale-y: 0.75 }
+.default-color0.chart-series-line { -fx-stroke: chocolate; -fx-stroke-width: 2px }
+
+.default-color1.chart-line-symbol { -fx-background-color: rgb(15, 148, 15), rgb(133, 186, 133) ; -fx-scale-x: 0.75; -fx-scale-y: 0.75 }
+.default-color1.chart-series-line { -fx-stroke: rgb(15, 148, 15); -fx-stroke-width: 2px }
+
 
 .chart-horizontal-grid-lines { -fx-stroke: gray }
 .chart-vertical-grid-lines { -fx-stroke: gray }
