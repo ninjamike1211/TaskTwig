@@ -112,7 +112,6 @@ public class TaskDialog extends Dialog<TaskDialog.TaskReturn> {
 
     private void updateFromTask() {
         if (inputTask != null) {
-            System.out.println(inputTask.name());
             nameTextField.setText(inputTask.name());
             switch (inputTask.interval()) {
                 case TwigInterval.SingleDayInterval singleTask -> {

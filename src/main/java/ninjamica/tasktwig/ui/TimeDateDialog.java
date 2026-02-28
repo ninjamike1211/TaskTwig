@@ -40,9 +40,7 @@ public class TimeDateDialog extends Dialog<LocalDateTime> {
             setResultConverter(buttonType -> {
                 if(Objects.equals(ButtonBar.ButtonData.OK_DONE, buttonType.getButtonData())) {
                     LocalTime time = timeSpinner.getValue();
-                    LocalDateTime dateTime = time.atDate(dateSelector.getValue());
-                    System.out.println(dateTime);
-                    return dateTime;
+                    return time.atDate(dateSelector.getValue());
                 }
 
                 return null;

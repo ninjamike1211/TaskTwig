@@ -285,9 +285,9 @@ public class TaskTwigController {
         };
         sleepStartCol.setCellFactory(timeCellFactory);
         sleepEndCol.setCellFactory(timeCellFactory);
-        sleepTableView.setItems(FXCollections.observableList(new ArrayList<>(twig.sleepRecords().values())));
+        sleepTableView.setItems(FXCollections.observableArrayList(twig.sleepRecords().values()).sorted((sleep1, sleep2) -> sleep2.end().compareTo(sleep1.end())));
 
-        sleepTableView.getSortOrder().add(sleepDateCol);
+        // sleepTableView.getSortOrder().add(sleepDateCol);
         sleepTimeNumAxis.setTickLabelFormatter(new StringConverter<Number>() {
             @Override
             public String toString(Number num) {
@@ -629,9 +629,9 @@ public class TaskTwigController {
             }
         });
         twig.journalMap().addListener((MapChangeListener<LocalDate, Journal>) change -> {
-            journalListView.setItems(FXCollections.observableArrayList(twig.journalMap().keySet()));
+            journalListView.setItems(FXCollections.observableArrayList(twig.journalMap().keySet()).sorted((date1, date2) -> date2.compareTo(date1)));
         });
-        journalListView.setItems(FXCollections.observableArrayList(twig.journalMap().keySet()));
+        journalListView.setItems(FXCollections.observableArrayList(twig.journalMap().keySet()).sorted((date1, date2) -> date2.compareTo(date1)));
         journalRoutineList.setSelectionModel(null);
         journalTaskList.setSelectionModel(null);
     }
@@ -720,7 +720,7 @@ public class TaskTwigController {
     }
 
     private void refillSleepTable() {
-        sleepTableView.setItems(FXCollections.observableList(new ArrayList<>(twig.sleepRecords().values())));
+        sleepTableView.setItems(FXCollections.observableList(new ArrayList<>(twig.sleepRecords().values())).sorted((sleep1, sleep2) -> sleep2.end().compareTo(sleep1.end())));
         sleepTableView.refresh();
 //        sleepTableView.getSortOrder().clear();
 //        sleepTableView.getSortOrder().add(sleepDateCol);
