@@ -15,13 +15,16 @@
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TitledPane?>
 <?import javafx.scene.control.TreeView?>
+<?import javafx.scene.effect.InnerShadow?>
 <?import javafx.scene.layout.AnchorPane?>
-<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.paint.Color?>
 <?import javafx.scene.text.Font?>
 
-<TabPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="651.0" prefWidth="882.0" stylesheets="@dark-theme.css" tabClosingPolicy="UNAVAILABLE" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ninjamica.tasktwig.ui.TaskTwigController">
+<TabPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="651.0" prefWidth="882.0" stylesheets="@dark-theme.css" tabClosingPolicy="UNAVAILABLE" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ninjamica.tasktwig.ui.TaskTwigController">
   <tabs>
       <Tab text="Today">
         <content>
@@ -44,7 +47,20 @@
                               <Font size="16.0" />
                            </font>
                         </Label>
-                        <TextArea fx:id="todayJournalTextArea" prefHeight="539.0" prefWidth="349.0" promptText="Type Journal Here" wrapText="true" VBox.vgrow="ALWAYS" />
+                        <TextArea fx:id="todayJournalTextArea" focusTraversable="false" prefHeight="539.0" prefWidth="349.0" promptText="Type journal here..." style="-fx-border-color: black; -fx-border-width: 0.3;" wrapText="true" VBox.vgrow="ALWAYS">
+                           <VBox.margin>
+                              <Insets />
+                           </VBox.margin>
+                           <opaqueInsets>
+                              <Insets />
+                           </opaqueInsets>
+                           <effect>
+                              <InnerShadow>
+                                 <color>
+                                    <Color opacity="0.30091187357902527" />
+                                 </color>
+                              </InnerShadow>
+                           </effect></TextArea>
                      </children>
                   </VBox>
                   <VBox alignment="CENTER" layoutX="291.0" layoutY="16.0" prefHeight="75.0" prefWidth="145.0" spacing="6.0" style="-fx-background-color: -fx-control-inner-background; -fx-border-color: black;">
@@ -65,7 +81,7 @@
                         <Insets top="10.0" />
                      </padding>
                   </ListView>
-                  <ListView fx:id="todayTaskListView" editable="true" fixedCellSize="32.0" focusTraversable="false" layoutX="263.0" layoutY="135.0" prefHeight="457.0" prefWidth="200.0" AnchorPane.bottomAnchor="28.0" AnchorPane.leftAnchor="263.0" AnchorPane.topAnchor="135.0">
+                  <ListView fx:id="todayTaskListView" editable="true" fixedCellSize="32.0" focusTraversable="false" layoutX="263.0" layoutY="135.0" prefHeight="457.0" prefWidth="200.0" AnchorPane.bottomAnchor="30.0" AnchorPane.leftAnchor="263.0" AnchorPane.topAnchor="135.0">
                      <padding>
                         <Insets top="10.0" />
                      </padding>
@@ -110,9 +126,9 @@
                               <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
                            </columnResizePolicy>
                         </TableView>
-                        <BorderPane fx:id="sleepLenChartPane">
-                           <center>
-                              <AreaChart fx:id="sleepLenChart" legendVisible="false" prefHeight="200.0" stylesheets="@areaChart.css">
+                        <HBox fx:id="sleepLenChartPane" alignment="CENTER">
+                           <children>
+                              <AreaChart fx:id="sleepLenChart" legendVisible="false" prefHeight="200.0" stylesheets="@areaChart.css" HBox.hgrow="ALWAYS">
                                 <xAxis>
                                   <CategoryAxis endMargin="10.0" startMargin="0.0" stylesheets="@areaChart.css" />
                                 </xAxis>
@@ -120,14 +136,13 @@
                                   <NumberAxis forceZeroInRange="false" label="Sleep (hours)" lowerBound="3.0" minorTickCount="3" stylesheets="@areaChart.css" tickUnit="2.0" upperBound="11.0" />
                                 </yAxis>
                               </AreaChart>
-                           </center>
-                           <right>
-                              <Button mnemonicParsing="false" onAction="#showSleepTimeChart" prefHeight="52.0" text="&gt;" BorderPane.alignment="CENTER" />
-                           </right>
-                        </BorderPane>
-                        <BorderPane fx:id="sleepTimeChartPane" prefHeight="200.0" prefWidth="200.0">
-                           <center>
-                              <LineChart fx:id="sleepTimeChart" horizontalZeroLineVisible="false" legendSide="TOP" prefHeight="200.0" stylesheets="@areaChart.css" BorderPane.alignment="CENTER">
+                              <Button mnemonicParsing="false" onAction="#showSleepTimeChart" prefHeight="52.0" text="&gt;" />
+                           </children>
+                        </HBox>
+                        <HBox fx:id="sleepTimeChartPane" alignment="CENTER">
+                           <children>
+                              <Button mnemonicParsing="false" onAction="#showSleepLenChart" prefHeight="52.0" text="&lt;" />
+                              <LineChart fx:id="sleepTimeChart" horizontalZeroLineVisible="false" legendSide="TOP" prefHeight="200.0" stylesheets="@areaChart.css" HBox.hgrow="ALWAYS">
                                 <xAxis>
                                   <CategoryAxis endMargin="10.0" />
                                 </xAxis>
@@ -135,11 +150,8 @@
                                   <NumberAxis fx:id="sleepTimeNumAxis" forceZeroInRange="false" label="Time" side="LEFT" tickUnit="3.0" upperBound="15.0" />
                                 </yAxis>
                               </LineChart>
-                           </center>
-                           <left>
-                              <Button mnemonicParsing="false" onAction="#showSleepLenChart" prefHeight="52.0" text="&lt;" BorderPane.alignment="CENTER" />
-                           </left>
-                        </BorderPane>
+                           </children>
+                        </HBox>
                      </children>
                   </VBox>
                </children></AnchorPane>
@@ -240,8 +252,43 @@
         <content>
           <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                <children>
-                  <TextArea fx:id="journalTextArea" layoutX="484.0" layoutY="57.0" prefHeight="560.0" prefWidth="581.0" wrapText="true" AnchorPane.bottomAnchor="30.0" AnchorPane.leftAnchor="250.0" AnchorPane.rightAnchor="30.0" AnchorPane.topAnchor="30.0" />
-                  <ListView fx:id="journalListView" focusTraversable="false" layoutX="80.0" layoutY="123.0" prefHeight="361.0" prefWidth="200.0" AnchorPane.bottomAnchor="30.0" AnchorPane.leftAnchor="30.0" AnchorPane.topAnchor="30.0" />
+                  <TextArea fx:id="journalTextArea" layoutX="484.0" layoutY="57.0" prefHeight="560.0" prefWidth="581.0" promptText="Select a date on the left to see journal" wrapText="true" AnchorPane.bottomAnchor="30.0" AnchorPane.leftAnchor="250.0" AnchorPane.rightAnchor="200.0" AnchorPane.topAnchor="30.0">
+                     <effect>
+                        <InnerShadow>
+                           <color>
+                              <Color opacity="0.304711252450943" />
+                           </color>
+                        </InnerShadow>
+                     </effect></TextArea>
+                  <ListView fx:id="journalListView" layoutX="80.0" layoutY="123.0" prefHeight="361.0" prefWidth="200.0" AnchorPane.bottomAnchor="30.0" AnchorPane.leftAnchor="30.0" AnchorPane.topAnchor="30.0" />
+                  <VBox alignment="TOP_CENTER" layoutX="466.0" layoutY="38.0" prefHeight="562.0" prefWidth="162.0" spacing="10.0" AnchorPane.bottomAnchor="30.0" AnchorPane.rightAnchor="20.0" AnchorPane.topAnchor="30.0">
+                     <children>
+                      <TitledPane text="Completed Routines" VBox.vgrow="SOMETIMES">
+                           <content>
+                              <AnchorPane style="-fx-padding: 0;">
+                                 <children>
+                                    <ListView fx:id="journalRoutineList" focusTraversable="false" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />
+                                 </children>
+                              </AnchorPane>
+                           </content>
+                           <font>
+                              <Font name="System Bold" size="13.0" />
+                           </font>
+                      </TitledPane>
+                      <TitledPane text="Completed Tasks" VBox.vgrow="SOMETIMES">
+                           <content>
+                              <AnchorPane style="-fx-padding: 0;">
+                                 <children>
+                                    <ListView fx:id="journalTaskList" focusTraversable="false" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />
+                                 </children>
+                              </AnchorPane>
+                           </content>
+                           <font>
+                              <Font name="System Bold" size="13.0" />
+                           </font>
+                      </TitledPane>
+                     </children>
+                  </VBox>
                </children>
             </AnchorPane>
         </content>

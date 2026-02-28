@@ -19,6 +19,10 @@
     -fx-prompt-text-fill: gray;
 }
 
+.text-area {
+    -fx-prompt-text-fill: rgb(195, 195, 195);
+}
+
 .titulo{
     -fx-font-weight: bold;
     -fx-font-size: 18px;
@@ -60,11 +64,14 @@
     -fx-font-weight: none;
 }
 
-.list-cell:even,
 .list-cell:odd,
-.table-row-cell:even,
 .table-row-cell:odd{
-    -fx-control-inner-background: derive(-fx-base, 15%);
+    -fx-control-inner-background: derive(-fx-base, 18%);
+}
+
+.list-cell:even,
+.table-row-cell:even{
+    -fx-control-inner-background: derive(-fx-base, 12%);
 }
 
 .list-cell:empty,

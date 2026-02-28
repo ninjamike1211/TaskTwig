@@ -84,7 +84,7 @@ public interface TwigInterval {
         }
 
         public WeeklyInterval(List<DayOfWeek> daysOfWeek) {
-            this(daysOfWeek.toArray(new DayOfWeek[0]));
+            this(daysOfWeek.toArray(DayOfWeek[]::new));
         }
 
         @JsonCreator

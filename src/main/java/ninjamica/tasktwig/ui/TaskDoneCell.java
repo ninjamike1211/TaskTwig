@@ -23,7 +23,7 @@ public class TaskDoneCell extends TableCell<Task, Boolean> {
                 boolean done = !this.getItem();
                 this.setItem(done);
                 updateIcon();
-                this.getTableView().getItems().get(this.getIndex()).setCompletion(done);
+                this.getTableView().getItems().get(this.getIndex()).setDone(done);
                 this.getTableView().refresh();
             }
         });

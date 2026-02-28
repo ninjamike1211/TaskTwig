@@ -4,10 +4,12 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIncludeProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import javafx.beans.property.*;
 
+import javafx.beans.property.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
+import java.util.Set;
 
 @JsonIncludeProperties({"name", "start", "end", "interval", "lastDone"})
 public class Routine extends TaskTwig.HasVersion {
@@ -79,11 +81,17 @@ public class Routine extends TaskTwig.HasVersion {
     }
 
     public void setDone(boolean done) {
+        List<String> journalRoutines = TaskTwig.instance().todaysJournal().completedRoutines();
+
         if (done) {
             this.lastDone.set(TaskTwig.effectiveDate());
+
+            if (!journalRoutines.contains(this.name()))
+                journalRoutines.add(this.name());
         }
         else {
             this.lastDone.set(null);
+            journalRoutines.remove(this.name());
         }
     }
 

@@ -60,9 +60,9 @@ public class TaskTwigController {
     @FXML
     private TableColumn<Sleep, Float> sleepLengthCol;
     @FXML
-    private BorderPane sleepLenChartPane;
+    private HBox sleepLenChartPane;
     @FXML
-    private BorderPane sleepTimeChartPane;
+    private HBox sleepTimeChartPane;
     @FXML
     private LineChart<String, Float> sleepTimeChart;
     @FXML
@@ -113,6 +113,10 @@ public class TaskTwigController {
     private ListView<LocalDate> journalListView;
     @FXML
     private TextArea journalTextArea;
+    @FXML
+    private ListView<String> journalRoutineList;
+    @FXML
+    private ListView<String> journalTaskList;
 
     private final TaskTwig twig = new TaskTwig();
     private Stage stage;
@@ -197,7 +201,7 @@ public class TaskTwigController {
 //                this.setCursor(Cursor.HAND);
 
                 checkBox.selectedProperty().addListener((observable, oldValue, newValue) -> {
-                    this.getItem().setCompletion(newValue);
+                    this.getItem().setDone(newValue);
                     if (newValue) {
                         name.setStyle("-fx-fill: #909090; -fx-strikethrough: true");
                         dueText.setVisible(false);
@@ -208,7 +212,10 @@ public class TaskTwigController {
                     }
                 });
 
-                this.setOnMouseClicked(event -> {checkBox.setSelected(!checkBox.isSelected());});
+                this.setOnMouseClicked(event -> {
+                    if (this.getItem() != null)
+                        checkBox.setSelected(!checkBox.isSelected());
+                });
 
                 pane.getChildren().addAll(checkBox, name, dueText);
             }
@@ -608,16 +615,25 @@ public class TaskTwigController {
         journalListView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
             if (oldValue != null && twig.journalMap().containsKey(oldValue)) {
                 journalTextArea.textProperty().unbindBidirectional(twig.journalMap().get(oldValue).textProperty());
+                journalRoutineList.setItems(null);
+                journalTaskList.setItems(null);
             }
 
             if (newValue != null && twig.journalMap().containsKey(newValue)) {
-                journalTextArea.textProperty().bindBidirectional(twig.journalMap().get(newValue).textProperty());
+                Journal journal = twig.journalMap().get(newValue);
+
+                journalRoutineList.setItems(journal.completedRoutines());
+                journalTaskList.setItems(journal.completedTasks());
+                journalTextArea.textProperty().bindBidirectional(journal.textProperty());
+                journalTextArea.setPromptText("Type journal here...");
             }
         });
         twig.journalMap().addListener((MapChangeListener<LocalDate, Journal>) change -> {
             journalListView.setItems(FXCollections.observableArrayList(twig.journalMap().keySet()));
         });
         journalListView.setItems(FXCollections.observableArrayList(twig.journalMap().keySet()));
+        journalRoutineList.setSelectionModel(null);
+        journalTaskList.setSelectionModel(null);
     }
 
     public void setStage(Stage stage) {

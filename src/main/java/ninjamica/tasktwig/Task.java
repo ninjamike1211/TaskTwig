@@ -5,12 +5,12 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+import javafx.collections.ObservableList;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.Map;
-
-import static com.fasterxml.jackson.annotation.JsonTypeInfo.*;
+import java.util.List;
+import java.util.Set;
 
 @JsonIncludeProperties({"name", "interval", "lastDone", "dueTime"})
 public class Task extends TaskTwig.HasVersion {
@@ -87,12 +87,18 @@ public class Task extends TaskTwig.HasVersion {
         }
     }
 
-    public void setCompletion(boolean done) {
+    public void setDone(boolean done) {
+        List<String> journalTasks = TaskTwig.instance().todaysJournal().completedTasks();
+
         if (done) {
             this.lastDone.set(TaskTwig.effectiveDate());
+            
+            if (!journalTasks.contains(this.name()))
+                journalTasks.add(this.name());
         }
         else {
             this.lastDone.set(null);
+            journalTasks.remove(this.name());
         }
     }
 }

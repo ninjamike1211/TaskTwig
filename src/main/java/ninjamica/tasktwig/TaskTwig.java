@@ -26,6 +26,7 @@ public class TaskTwig implements Serializable {
         public static final int VERSION = 0;
     }
 
+    private static TaskTwig instance;
     private static LocalTime dayStart = LocalTime.of(5,00);
 
     private ObservableMap<LocalDate, Sleep> sleepRecords;
@@ -42,10 +43,14 @@ public class TaskTwig implements Serializable {
 
     public TaskTwig() {
         this.readFromFile();
-
+        TaskTwig.instance = this;
 //        routineList = FXCollections.observableArrayList();
 //        routineList.add(new Routine("test1", LocalTime.of(6,00), null, new TwigInterval.DailyInterval()));
 //        routineList.add(new Routine("test2", null, LocalTime.of(18,30), new TwigInterval.WeekInterval(DayOfWeek.MONDAY, DayOfWeek.THURSDAY, DayOfWeek.FRIDAY)));
+    }
+
+    static TaskTwig instance() {
+        return TaskTwig.instance;
     }
 
     public static void setDayStart(LocalTime dayStart) {
@@ -146,7 +151,7 @@ public class TaskTwig implements Serializable {
     }
 
     public void finishTask(int index) {
-        taskList.get(index).setCompletion(true);
+        taskList.get(index).setDone(true);
     }
 
     public ObservableList<Task> taskList() {
@@ -163,6 +168,11 @@ public class TaskTwig implements Serializable {
 
     public ObservableMap<LocalDate, Journal> journalMap() {
         return journalMap;
+    }
+
+    public Journal todaysJournal() {
+        journalMap.putIfAbsent(effectiveDate(), new Journal());
+        return journalMap.get(effectiveDate());
     }
 
     public void printSleepRecords() {
@@ -417,11 +427,7 @@ public class TaskTwig implements Serializable {
 
 
     public static void main() {
-//        TaskTwig tracker = TaskTwig.initialize();
         TaskTwig tracker = new TaskTwig();
-        // tracker.addTask(new Task("testTask", LocalDate.now(), null));
-        // tracker.addTask(new Task("EAT SOMETHING", LocalDate.now(), LocalTime.of(19, 0)));
-//        tracker.addTask(new DailyTask("GO TO SLEEEEP", LocalTime.of(23, 0)));
 
         Scanner userIn = new Scanner(System.in);
 
