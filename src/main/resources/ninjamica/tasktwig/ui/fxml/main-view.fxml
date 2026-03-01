@@ -40,7 +40,7 @@
                         <Font size="16.0" />
                      </font>
                   </Label>
-                  <VBox alignment="TOP_CENTER" layoutX="497.0" layoutY="16.0" prefHeight="566.0" prefWidth="355.0" spacing="5.0" AnchorPane.bottomAnchor="30.0" AnchorPane.leftAnchor="497.0" AnchorPane.rightAnchor="30.0">
+                  <VBox alignment="TOP_CENTER" layoutX="497.0" layoutY="16.0" prefHeight="566.0" prefWidth="355.0" spacing="5.0" AnchorPane.bottomAnchor="30.0" AnchorPane.leftAnchor="497.0" AnchorPane.rightAnchor="30.0" AnchorPane.topAnchor="25.0">
                      <children>
                         <Label text="Journal">
                            <font>

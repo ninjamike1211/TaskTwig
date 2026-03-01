@@ -6,6 +6,9 @@ module ninjamica.tasktwig.tasktwig {
     requires org.controlsfx.controls;
     requires atlantafx.base;
 
+    requires transitive javafx.base;
+    requires transitive javafx.graphics; 
+
 
     opens ninjamica.tasktwig to javafx.fxml;
     exports ninjamica.tasktwig;

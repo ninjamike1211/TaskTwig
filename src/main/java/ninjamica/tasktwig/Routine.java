@@ -9,7 +9,6 @@ import javafx.beans.property.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
-import java.util.Set;
 
 @JsonIncludeProperties({"name", "start", "end", "interval", "lastDone"})
 public class Routine extends TaskTwig.HasVersion {

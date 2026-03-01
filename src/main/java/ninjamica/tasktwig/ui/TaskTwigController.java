@@ -144,28 +144,30 @@ public class TaskTwigController {
         todayRoutineListView.setCellFactory(col -> new ListCell<>() {
             private final CheckBox checkBox = new CheckBox();
             private final Text name = new Text();
-            private final AnchorPane pane = new AnchorPane();
+            private final Text dueText = new Text();
+            private final HBox pane = new HBox(7);
             {
                 name.setStyle("-fx-fill: lightgray");
-                this.setOnMouseEntered(event -> {name.setUnderline(true);});
-                this.setOnMouseExited(event -> {name.setUnderline(false);});
+                dueText.setStyle("-fx-fill: #a1a1a1");
+                this.setOnMouseEntered(event -> {name.setUnderline(true); dueText.setUnderline(true);});
+                this.setOnMouseExited(event -> {name.setUnderline(false); dueText.setUnderline(false);});
 //                this.setCursor(Cursor.HAND);
 
                 checkBox.selectedProperty().addListener((observable, oldValue, newValue) -> {
                     this.getItem().setDone(newValue);
                     if (newValue) {
                         name.setStyle("-fx-fill: #909090; -fx-strikethrough: true");
+                        dueText.setVisible(false);
                     }
                     else {
                         name.setStyle("-fx-fill: lightgray");
+                        dueText.setVisible(true);
                     }
                 });
 
                 this.setOnMouseClicked(event -> {checkBox.setSelected(!checkBox.isSelected());});
 
-                pane.getChildren().addAll(checkBox, name);
-                name.setLayoutX(25);
-                name.setLayoutY(14);
+                pane.getChildren().addAll(checkBox, name, dueText);
             }
 
             @Override
@@ -180,6 +182,14 @@ public class TaskTwigController {
                 else {
                     name.textProperty().bind(item.getName());
                     checkBox.setSelected(item.isDoneToday());
+
+                    if (item.end() != null) {
+                        dueText.setText("by " + item.end().format(timeFormat));
+                    }
+                    else {
+                        dueText.setText(null);
+                    }
+
                     setGraphic(pane);
                     setBackground(Background.EMPTY);
                 }
