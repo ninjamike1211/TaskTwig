@@ -92,8 +92,8 @@ public class TaskDialog extends Dialog<TaskDialog.TaskReturn> {
     public TaskDialog(Window owner, Task task) {
         this(owner);
         inputTask = task;
-        setTitle(task.name());
-        getDialogPane().setHeaderText(task.name());
+        setTitle(task.getName());
+        getDialogPane().setHeaderText(task.getName());
         updateFromTask();
 
         getDialogPane().getButtonTypes().add(1, new ButtonType("Delete", ButtonBar.ButtonData.OTHER));
@@ -112,8 +112,8 @@ public class TaskDialog extends Dialog<TaskDialog.TaskReturn> {
 
     private void updateFromTask() {
         if (inputTask != null) {
-            nameTextField.setText(inputTask.name());
-            switch (inputTask.interval()) {
+            nameTextField.setText(inputTask.getName());
+            switch (inputTask.getInterval()) {
                 case TwigInterval.SingleDayInterval singleTask -> {
                     typeChoiceBox.getSelectionModel().select(0);
                     dueDatePicker.setValue(singleTask.next());
@@ -145,12 +145,13 @@ public class TaskDialog extends Dialog<TaskDialog.TaskReturn> {
                 default -> typeChoiceBox.getSelectionModel().select(0);
             }
 
-            if (inputTask.dueTime() == null) {
+            if (inputTask.getDueTime() == null) {
                 dueTimeCheckbox.setSelected(true);
             }
             else {
                 dueTimeCheckbox.setSelected(false);
-                dueTimeSpinner.getEditor().setText(TimeSpinner.timeFormat.format(inputTask.dueTime()));
+
+                dueTimeSpinner.getEditor().setText(TimeSpinner.timeFormat.format(inputTask.getDueTime()));
             }
         }
         else {

@@ -7,6 +7,7 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import tools.jackson.databind.JsonNode;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -42,6 +43,37 @@ public interface TwigInterval {
      * @return whether the interval includes today
      */
     boolean isToday();
+
+    public static TwigInterval parseFromJson(JsonNode node) {
+        switch (node.get("@type").asString()) {
+            case "daily" -> {
+                return new DailyInterval();
+            }
+            case "weekly" -> {
+                boolean[] daysOfWeek = new boolean[7];
+
+                int i = 0;
+                for (JsonNode day : node.get("daysOfWeek")) {
+                    daysOfWeek[i++] = day.asBoolean();
+                }
+                return new WeeklyInterval(daysOfWeek);
+            }
+            case "monthly" -> {
+                List<Integer> days = new ArrayList<>();
+
+                for (JsonNode day : node.get("dueDays")) {
+                    days.add(day.asInt());
+                }
+                return new MonthlyInterval(days);
+            }
+            case "singleDay" -> {
+                return new SingleDayInterval(LocalDate.parse(node.get("date").asString()));
+            }
+            default -> {
+                return null;
+            }
+        }
+    }
 
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY)

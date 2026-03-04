@@ -6,23 +6,15 @@ import com.fasterxml.jackson.annotation.JsonIncludeProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import javafx.beans.property.*;
+import tools.jackson.databind.JsonNode;
+
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 
 @JsonIncludeProperties({"name", "start", "end", "interval", "lastDone"})
-public class Routine extends TaskTwig.HasVersion {
+public record Routine(StringProperty name, ObjectProperty<LocalTime> startTime, ObjectProperty<LocalTime> endTime, ObjectProperty<TwigInterval> interval, ObjectProperty<LocalDate> lastDone) {
     public static final int VERSION = 1;
-
-    private final StringProperty name = new SimpleStringProperty();
-    private final ObjectProperty<LocalTime> startTime = new SimpleObjectProperty<>();
-    private final ObjectProperty<LocalTime> endTime = new SimpleObjectProperty<>();
-    private final ObjectProperty<TwigInterval> interval = new SimpleObjectProperty<>();
-    private final ObjectProperty<LocalDate> lastDone = new SimpleObjectProperty<>();
-
-    public Routine(String name, LocalTime startTime, LocalTime endTime, TwigInterval interval) {
-        this(name, startTime, endTime, interval, null);
-    }
 
     @JsonCreator
     public Routine(
@@ -32,47 +24,68 @@ public class Routine extends TaskTwig.HasVersion {
         @JsonProperty("interval") TwigInterval interval,
         @JsonProperty("lastDone") LocalDate lastDone)
     {
-        this.name.set(name);
-        this.startTime.set(startTime);
-        this.endTime.set(endTime);
-        this.interval.set(interval);
-        this.lastDone.set(lastDone);
+        this(new SimpleStringProperty(name),
+                new SimpleObjectProperty<>(startTime),
+                new SimpleObjectProperty<>(endTime),
+                new SimpleObjectProperty<>(interval),
+                new SimpleObjectProperty<>(lastDone));
     }
 
-    public StringProperty getName() {
-        return name;
+    public Routine(String name, LocalTime startTime, LocalTime endTime, TwigInterval interval) {
+        this(name, startTime, endTime, interval, null);
+    }
+
+    public Routine(TaskTwig.TwigJsonNode twigNode) {
+        JsonNode node = twigNode.node();
+        String name = null;
+        LocalTime start = null, end = null;
+        TwigInterval interval = null;
+        LocalDate lastDone = null;
+
+        if (twigNode.version() == 1) {
+            name = node.get("name").asString();
+
+            JsonNode startNode = node.get("start");
+            start = startNode.isNull() ? null : LocalTime.parse(startNode.asString());
+
+            JsonNode endNode = node.get("end");
+            end = endNode.isNull() ? null : LocalTime.parse(endNode.asString());
+
+            interval = TwigInterval.parseFromJson(node.get("interval"));
+
+            JsonNode lastDoneNode = node.get("lastDone");
+            lastDone = lastDoneNode.isNull() ? null : LocalDate.parse(lastDoneNode.asString());
+        }
+        else {
+            throw new TaskTwig.JsonVersionException("Unsupported Routine version: " + twigNode.version());
+        }
+
+        this(name, start, end, interval, lastDone);
     }
 
     @JsonGetter("name")
-    public String name() {
+    public String getName() {
         return name.get();
     }
 
-    public ObjectProperty<LocalTime> getStartTime() {
-        return startTime;
-    }
-
     @JsonGetter("start")
-    public LocalTime start() {
+    public LocalTime getStart() {
         return startTime.get();
     }
 
-    public ObjectProperty<LocalTime> getEndTime() {
-        return endTime;
-    }
-
     @JsonGetter("end")
-    public LocalTime end() {
+    public LocalTime getEnd() {
         return endTime.get();
     }
 
-    public ObjectProperty<TwigInterval> getInterval() {
-        return interval;
+    @JsonGetter("interval")
+    public TwigInterval getInterval() {
+        return interval.get();
     }
 
-    @JsonGetter("interval")
-    public TwigInterval interval() {
-        return interval.get();
+    @JsonGetter("lastDone")
+    public LocalDate getLastDone() {
+        return lastDone.get();
     }
 
     public boolean isDoneToday() {
@@ -85,17 +98,12 @@ public class Routine extends TaskTwig.HasVersion {
         if (done) {
             this.lastDone.set(TaskTwig.effectiveDate());
 
-            if (!journalRoutines.contains(this.name()))
-                journalRoutines.add(this.name());
+            if (!journalRoutines.contains(this.getName()))
+                journalRoutines.add(this.getName());
         }
         else {
             this.lastDone.set(null);
-            journalRoutines.remove(this.name());
+            journalRoutines.remove(this.getName());
         }
-    }
-
-    @JsonGetter("lastDone")
-    public LocalDate lastDone() {
-        return lastDone.get();
     }
 }

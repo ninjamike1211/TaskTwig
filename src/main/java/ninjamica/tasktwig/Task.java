@@ -5,19 +5,15 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+import tools.jackson.databind.JsonNode;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 
 @JsonIncludeProperties({"name", "interval", "lastDone", "dueTime"})
-public class Task extends TaskTwig.HasVersion {
+public record Task (StringProperty name, ObjectProperty<TwigInterval> interval, ObjectProperty<LocalDate> lastDone, ObjectProperty<LocalTime> dueTime) {
     public static final int VERSION = 3;
-
-    private final StringProperty name = new SimpleStringProperty();
-    private final ObjectProperty<TwigInterval> interval = new SimpleObjectProperty<>();
-    private final ObjectProperty<LocalDate> lastDone = new SimpleObjectProperty<>();
-    private final ObjectProperty<LocalTime> dueTime = new SimpleObjectProperty<>();
 
     @JsonCreator
     public Task (
@@ -26,49 +22,57 @@ public class Task extends TaskTwig.HasVersion {
             @JsonProperty("interval") TwigInterval interval,
             @JsonProperty("lastDone") LocalDate lastDone)
     {
-        this.name.set(name);
-        this.interval.set(interval);
-        this.lastDone.set(lastDone);
-        this.dueTime.set(dueTime);
+        this(new SimpleStringProperty(name),
+             new SimpleObjectProperty<>(interval),
+             new SimpleObjectProperty<>(lastDone),
+             new SimpleObjectProperty<>(dueTime));
     }
 
     public Task(String name, LocalTime dueTime, TwigInterval interval) {
         this(name, dueTime, interval, null);
     }
 
-    public StringProperty nameProperty() {
-        return name;
+    public Task(TaskTwig.TwigJsonNode twigNode) {
+        JsonNode node = twigNode.node();
+        String name = null;
+        TwigInterval interval = null;
+        LocalDate lastDone = null;
+        LocalTime dueTime = null;
+
+        if (twigNode.version() == 3) {
+            name = node.get("name").asString();
+            interval = TwigInterval.parseFromJson(node.get("interval"));
+
+            JsonNode startNode = node.get("lastDone");
+            lastDone = startNode.isNull() ? null : LocalDate.parse(startNode.asString());
+
+            JsonNode endNode = node.get("dueTime");
+            dueTime = endNode.isNull() ? null : LocalTime.parse(endNode.asString());
+        }
+        else {
+            throw new TaskTwig.JsonVersionException("Unsupported Task version: " + twigNode.version());
+        }
+
+        this(name, dueTime, interval, lastDone);
     }
 
     @JsonGetter("name")
-    public String name() {
+    public String getName() {
         return this.name.get();
     }
 
-    public ObjectProperty<TwigInterval> intervalProperty() {
-        return interval;
-    }
-
     @JsonGetter("interval")
-    public TwigInterval interval() {
+    public TwigInterval getInterval() {
         return this.interval.get();
     }
 
-    public ObjectProperty<LocalDate> lastDoneProperty() {
-        return lastDone;
-    }
-
     @JsonGetter("lastDone")
-    public LocalDate lastDone() {
+    public LocalDate getLastDone() {
         return this.lastDone.get();
     }
 
-    public ObjectProperty<LocalTime> dueTimeProperty() {
-        return dueTime;
-    }
-
     @JsonGetter("dueTime")
-    public LocalTime dueTime() {
+    public LocalTime getDueTime() {
         return dueTime.get();
     }
 
@@ -91,12 +95,12 @@ public class Task extends TaskTwig.HasVersion {
         if (done) {
             this.lastDone.set(TaskTwig.effectiveDate());
             
-            if (!journalTasks.contains(this.name()))
-                journalTasks.add(this.name());
+            if (!journalTasks.contains(this.getName()))
+                journalTasks.add(this.getName());
         }
         else {
             this.lastDone.set(null);
-            journalTasks.remove(this.name());
+            journalTasks.remove(this.getName());
         }
     }
 }

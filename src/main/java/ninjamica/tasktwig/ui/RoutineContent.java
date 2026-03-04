@@ -56,11 +56,11 @@ public class RoutineContent extends AnchorPane {
 
             getChildren().add(loader.load());
 
-            nameTextField.textProperty().bindBidirectional(routine.getName());
+            nameTextField.textProperty().bindBidirectional(routine.name());
             typeChoiceBox.setItems(types);
             typeChoiceBox.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {updateType(routine, oldValue, newValue);});
 
-            switch (routine.interval()) {
+            switch (routine.getInterval()) {
                 case TwigInterval.DailyInterval daily -> {
                     typeChoiceBox.getSelectionModel().select(0);
                 }
@@ -81,46 +81,46 @@ public class RoutineContent extends AnchorPane {
             endTimeSpinner.disableProperty().bindBidirectional(endTimeCheckbox.selectedProperty());
 
 
-            if (routine.start() == null) {
+            if (routine.getStart() == null) {
                 startTimeCheckbox.setSelected(true);
                 new TimeSpinner(startTimeSpinner);
             }
             else {
                 startTimeCheckbox.setSelected(false);
-                new TimeSpinner(startTimeSpinner, routine.start());
+                new TimeSpinner(startTimeSpinner, routine.getStart());
             }
 
-            if (routine.end() == null) {
+            if (routine.getEnd() == null) {
                 endTimeCheckbox.setSelected(true);
                 new TimeSpinner(endTimeSpinner);
             }
             else {
                 endTimeCheckbox.setSelected(false);
-                new TimeSpinner(endTimeSpinner, routine.end());
+                new TimeSpinner(endTimeSpinner, routine.getEnd());
             }
 
             startTimeCheckbox.selectedProperty().addListener((observable, oldValue, newValue) -> {
                if (newValue) {
-                   routine.getStartTime().set(null);
+                   routine.startTime().set(null);
                }
                else {
-                   routine.getStartTime().set(startTimeSpinner.getValue());
+                   routine.startTime().set(startTimeSpinner.getValue());
                }
             });
             startTimeSpinner.valueProperty().addListener((observable, oldValue, newValue) -> {
-                routine.getStartTime().set(newValue);
+                routine.startTime().set(newValue);
             });
 
             endTimeCheckbox.selectedProperty().addListener((observable, oldValue, newValue) -> {
                if (newValue) {
-                   routine.getEndTime().set(null);
+                   routine.endTime().set(null);
                }
                else {
-                   routine.getEndTime().set(endTimeSpinner.getValue());
+                   routine.endTime().set(endTimeSpinner.getValue());
                }
             });
             endTimeSpinner.valueProperty().addListener((observable, oldValue, newValue) -> {
-                routine.getEndTime().set(newValue);
+                routine.endTime().set(newValue);
             });
 
         }
@@ -136,29 +136,29 @@ public class RoutineContent extends AnchorPane {
                 contentVbox.getChildren().remove(dayOfWeekPane);
 
                 if ("Weekly".equals(oldValue)) {
-                    dayMButton.selectedProperty().unbindBidirectional(((TwigInterval.WeeklyInterval) routine.interval()).dayOfWeekProperty(0));
-                    dayTButton.selectedProperty().unbindBidirectional(((TwigInterval.WeeklyInterval) routine.interval()).dayOfWeekProperty(1));
-                    dayWButton.selectedProperty().unbindBidirectional(((TwigInterval.WeeklyInterval) routine.interval()).dayOfWeekProperty(2));
-                    dayThButton.selectedProperty().unbindBidirectional(((TwigInterval.WeeklyInterval) routine.interval()).dayOfWeekProperty(3));
-                    dayFButton.selectedProperty().unbindBidirectional(((TwigInterval.WeeklyInterval) routine.interval()).dayOfWeekProperty(4));
-                    daySaButton.selectedProperty().unbindBidirectional(((TwigInterval.WeeklyInterval) routine.interval()).dayOfWeekProperty(5));
-                    daySuButton.selectedProperty().unbindBidirectional(((TwigInterval.WeeklyInterval) routine.interval()).dayOfWeekProperty(6));
+                    dayMButton.selectedProperty().unbindBidirectional(((TwigInterval.WeeklyInterval) routine.getInterval()).dayOfWeekProperty(0));
+                    dayTButton.selectedProperty().unbindBidirectional(((TwigInterval.WeeklyInterval) routine.getInterval()).dayOfWeekProperty(1));
+                    dayWButton.selectedProperty().unbindBidirectional(((TwigInterval.WeeklyInterval) routine.getInterval()).dayOfWeekProperty(2));
+                    dayThButton.selectedProperty().unbindBidirectional(((TwigInterval.WeeklyInterval) routine.getInterval()).dayOfWeekProperty(3));
+                    dayFButton.selectedProperty().unbindBidirectional(((TwigInterval.WeeklyInterval) routine.getInterval()).dayOfWeekProperty(4));
+                    daySaButton.selectedProperty().unbindBidirectional(((TwigInterval.WeeklyInterval) routine.getInterval()).dayOfWeekProperty(5));
+                    daySuButton.selectedProperty().unbindBidirectional(((TwigInterval.WeeklyInterval) routine.getInterval()).dayOfWeekProperty(6));
                 }
 
-                routine.getInterval().set(new TwigInterval.DailyInterval());
+                routine.interval().set(new TwigInterval.DailyInterval());
             }
             else {
                 if (!contentVbox.getChildren().contains(dayOfWeekPane)) {
                     contentVbox.getChildren().add(2, dayOfWeekPane);
-                    routine.getInterval().set(new TwigInterval.WeeklyInterval());
+                    routine.interval().set(new TwigInterval.WeeklyInterval());
 
-                    dayMButton.selectedProperty().bindBidirectional(((TwigInterval.WeeklyInterval)routine.interval()).dayOfWeekProperty(0));
-                    dayTButton.selectedProperty().bindBidirectional(((TwigInterval.WeeklyInterval)routine.interval()).dayOfWeekProperty(1));
-                    dayWButton.selectedProperty().bindBidirectional(((TwigInterval.WeeklyInterval)routine.interval()).dayOfWeekProperty(2));
-                    dayThButton.selectedProperty().bindBidirectional(((TwigInterval.WeeklyInterval)routine.interval()).dayOfWeekProperty(3));
-                    dayFButton.selectedProperty().bindBidirectional(((TwigInterval.WeeklyInterval)routine.interval()).dayOfWeekProperty(4));
-                    daySaButton.selectedProperty().bindBidirectional(((TwigInterval.WeeklyInterval)routine.interval()).dayOfWeekProperty(5));
-                    daySuButton.selectedProperty().bindBidirectional(((TwigInterval.WeeklyInterval)routine.interval()).dayOfWeekProperty(6));
+                    dayMButton.selectedProperty().bindBidirectional(((TwigInterval.WeeklyInterval)routine.getInterval()).dayOfWeekProperty(0));
+                    dayTButton.selectedProperty().bindBidirectional(((TwigInterval.WeeklyInterval)routine.getInterval()).dayOfWeekProperty(1));
+                    dayWButton.selectedProperty().bindBidirectional(((TwigInterval.WeeklyInterval)routine.getInterval()).dayOfWeekProperty(2));
+                    dayThButton.selectedProperty().bindBidirectional(((TwigInterval.WeeklyInterval)routine.getInterval()).dayOfWeekProperty(3));
+                    dayFButton.selectedProperty().bindBidirectional(((TwigInterval.WeeklyInterval)routine.getInterval()).dayOfWeekProperty(4));
+                    daySaButton.selectedProperty().bindBidirectional(((TwigInterval.WeeklyInterval)routine.getInterval()).dayOfWeekProperty(5));
+                    daySuButton.selectedProperty().bindBidirectional(((TwigInterval.WeeklyInterval)routine.getInterval()).dayOfWeekProperty(6));
                 }
             }
         }

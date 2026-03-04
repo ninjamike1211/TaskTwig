@@ -181,11 +181,11 @@ public class TaskTwigController {
                     setGraphic(null);
                 }
                 else {
-                    name.textProperty().bind(item.getName());
+                    name.textProperty().bind(item.name());
                     checkBox.setSelected(item.isDoneToday());
 
-                    if (item.end() != null) {
-                        dueText.setText("by " + item.end().format(timeFormat));
+                    if (item.getEnd() != null) {
+                        dueText.setText("by " + item.getEnd().format(timeFormat));
                     }
                     else {
                         dueText.setText(null);
@@ -197,7 +197,7 @@ public class TaskTwigController {
             }
         });
         todayRoutineListView.setSelectionModel(null);
-        todayRoutineListView.setItems(twig.routineList().filtered(item -> item.interval().isToday()));
+        todayRoutineListView.setItems(twig.routineList().filtered(item -> item.getInterval().isToday()));
 
         todayTaskListView.setCellFactory(col -> new ListCell<Task>() {
             private final CheckBox checkBox = new CheckBox();
@@ -243,14 +243,14 @@ public class TaskTwigController {
                     setGraphic(null);
                 }
                 else {
-                    name.textProperty().bind(item.nameProperty());
+                    name.textProperty().bind(item.name());
                     checkBox.setSelected(item.isDone());
 
-                    if (item.dueTime() != null) {
-                        dueText.setText(item.interval().next().format(shortDateFormat) + " at " + item.dueTime().format(timeFormat));
+                    if (item.getDueTime() != null) {
+                        dueText.setText(item.getInterval().next().format(shortDateFormat) + " at " + item.getDueTime().format(timeFormat));
                     }
                     else {
-                        dueText.setText(item.interval().next().format(shortDateFormat));
+                        dueText.setText(item.getInterval().next().format(shortDateFormat));
                     }
 
                     setGraphic(pane);
@@ -260,10 +260,10 @@ public class TaskTwigController {
         });
         todayTaskListView.setSelectionModel(null);
         todayTaskListView.setItems(twig.taskList().filtered(item -> {
-            if (item.interval().next() == null) {
+            if (item.getInterval().next() == null) {
                 return false;
             }
-            return !TaskTwig.effectiveDate().isAfter(item.interval().next());
+            return !TaskTwig.effectiveDate().isAfter(item.getInterval().next());
         }));
 
         twig.sleepStart().addListener((observable, oldValue, newValue) -> setSleepStatusLabel(newValue));
@@ -334,13 +334,13 @@ public class TaskTwigController {
         taskDoneCol.setCellValueFactory(task -> new SimpleBooleanProperty(task.getValue().isDone()));
         taskDoneCol.setCellFactory(col -> new TaskDoneCell());
 
-        taskNameCol.setCellValueFactory(task -> new SimpleStringProperty(task.getValue().name()));
+        taskNameCol.setCellValueFactory(task -> new SimpleStringProperty(task.getValue().getName()));
         taskDateTimeCol.setCellValueFactory(task -> {
-            if(task.getValue().interval().next() != null) {
-                String strVal = task.getValue().interval().next().format(dateFormat);
+            if(task.getValue().getInterval().next() != null) {
+                String strVal = task.getValue().getInterval().next().format(dateFormat);
 
-                if (task.getValue().dueTime() != null) {
-                    strVal += " " + task.getValue().dueTime().format(timeFormat);
+                if (task.getValue().getDueTime() != null) {
+                    strVal += " " + task.getValue().getDueTime().format(timeFormat);
                 }
 
                 return new SimpleStringProperty(strVal);
@@ -350,7 +350,7 @@ public class TaskTwigController {
             }
         });
         taskRepeatCol.setCellValueFactory(task -> {
-            switch (task.getValue().interval()) {
+            switch (task.getValue().getInterval()) {
                 case TwigInterval.DailyInterval dailyTask -> {
                     return new SimpleStringProperty("Daily");
                 }
@@ -584,10 +584,10 @@ public class TaskTwigController {
 
             return row;
         });
-        routineNameCol.setCellValueFactory(routine -> routine.getValue().getName());
-        routineIntervalCol.setCellValueFactory(routine -> routine.getValue().getInterval());
-        routineStartCol.setCellValueFactory(routine -> routine.getValue().getStartTime());
-        routineEndCol.setCellValueFactory(routine -> routine.getValue().getEndTime());
+        routineNameCol.setCellValueFactory(routine -> routine.getValue().name());
+        routineIntervalCol.setCellValueFactory(routine -> routine.getValue().interval());
+        routineStartCol.setCellValueFactory(routine -> routine.getValue().startTime());
+        routineEndCol.setCellValueFactory(routine -> routine.getValue().endTime());
         routineIntervalCol.setCellFactory(col -> new TableCell<Routine, TwigInterval>() {
             @Override
             protected void updateItem(TwigInterval item, boolean empty) {
@@ -793,26 +793,26 @@ public class TaskTwigController {
             sleepButton.setText("Finish");
             sleepStatusLabel.setText("Status: sleeping, started "+ time.format(timeFormat));
             
-            if (TaskTwig.hoursFromNightStart() < 0) {
-                todaySleepButton.setText("Wake Up");
-                todaySleepButton.setDisable(false);
-            }
-            else {
+            if (TaskTwig.isNight()) {
                 todaySleepButton.setText("Sleeping");
                 todaySleepButton.setDisable(true);
+            }
+            else {
+                todaySleepButton.setText("Wake Up");
+                todaySleepButton.setDisable(false);
             }
         }
         else {
             sleepButton.setText("Start");
             sleepStatusLabel.setText("Status: not sleeping");
 
-            if (TaskTwig.hoursFromNightStart() < 0) {
-                todaySleepButton.setText("Awake");
-                todaySleepButton.setDisable(true);
-            }
-            else {
+            if (TaskTwig.isNight()) {
                 todaySleepButton.setText("Go To Bed");
                 todaySleepButton.setDisable(false);
+            }
+            else {
+                todaySleepButton.setText("Awake");
+                todaySleepButton.setDisable(true);
             }
         }
     }

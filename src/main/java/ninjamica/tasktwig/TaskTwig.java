@@ -6,9 +6,11 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.ObservableMap;
+import javafx.util.Callback;
 import tools.jackson.core.*;
 import tools.jackson.core.exc.JacksonIOException;
 import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.*;
@@ -17,15 +19,21 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalUnit;
 import java.util.*;
 
 public class TaskTwig implements Serializable {
 
-    private static final class JsonAssertException extends RuntimeException {}
-    public static abstract class HasVersion {
-        public static final int VERSION = 0;
+    static class JsonAssertException extends RuntimeException {
+        public JsonAssertException(String message) {
+            super(message);
+        }
     }
+    static class JsonVersionException extends JsonAssertException {
+        public JsonVersionException(String message) {
+            super(message);
+        }
+    }
+    public record TwigJsonNode(JsonNode node, int version) {}
 
     private static TaskTwig instance;
     private static LocalTime dayStart = LocalTime.of(5,00);
@@ -83,17 +91,19 @@ public class TaskTwig implements Serializable {
             return LocalDate.now();
     }
 
-    public static float hoursFromNightStart(LocalTime time) {
-        if (time.isBefore(dayStart)) {
-            return (dayStart.until(LocalTime.MAX, ChronoUnit.SECONDS) + time.toSecondOfDay()) / 3600f;
-        }
-        else {
-            return dayStart.until(time, ChronoUnit.SECONDS) / 3600f;
-        }
+    public static boolean isNight(LocalTime time) {
+        if (time.isBefore(dayStart))
+            return true;
+
+        else if (time.isBefore(nightStart))
+            return false;
+
+        else
+            return true;
     }
 
-    public static float hoursFromNightStart() {
-        return TaskTwig.hoursFromNightStart(LocalTime.now());
+    public static boolean isNight() {
+        return TaskTwig.isNight(LocalTime.now());
     }
 
     public void startSleep() {
@@ -234,7 +244,7 @@ public class TaskTwig implements Serializable {
                 System.out.println("\t" + task.name() + " done!");
             }
             else {
-                System.out.println("\t" + task.name() + " due " + task.interval().next() + ((task.dueTime() == null) ? "" : (" at " + task.dueTime())));
+                System.out.println("\t" + task.name() + " due " + task.getInterval().next() + ((task.dueTime() == null) ? "" : (" at " + task.dueTime())));
             }
         }
     }
@@ -328,124 +338,141 @@ public class TaskTwig implements Serializable {
         File routineJson = new File("data/routine.json");
         File journalJson = new File("data/journal.json");
 
-        try {
-            // Parse sleep records
-            try (JsonParser parser = mapper.createParser(sleepJson)) {
-                parser.nextToken();
-                assertEqual(parser.nextName(), "version");
-                assertVersion(parser.nextIntValue(0), Sleep.class);
+        // Parse sleep records
+        SortedMap<LocalDate, Sleep> sleepMap = new TreeMap<>();
+        try (JsonParser parser = mapper.createParser(sleepJson)) {
+            parser.nextToken();
+            assertEqual(parser.nextName(), "version");
+            int version = parser.nextIntValue(0);
 
-                assertEqual(parser.nextName(), "sleepProgressStart");
-                if (parser.nextToken() == JsonToken.VALUE_STRING)
-                    this.sleepStart.setValue(LocalDateTime.parse(parser.getString()));
-                else
-                    assertEqual(parser.currentToken(), JsonToken.VALUE_NULL);
+            assertEqual(parser.nextName(), "sleepProgressStart");
+            if (parser.nextToken() == JsonToken.VALUE_STRING)
+                this.sleepStart.setValue(LocalDateTime.parse(parser.getString()));
+            else
+                assertEqual(parser.currentToken(), JsonToken.VALUE_NULL);
 
-                assertEqual(parser.nextName(), "sleepRecords");
-                parser.nextToken();
-                this.sleepRecords = FXCollections.observableMap(parser.readValueAs(new TypeReference<SortedMap<LocalDate, Sleep>>() {}));
-            }
-            catch (JsonAssertException | JacksonIOException e) {
-                this.sleepStart.setValue(null);
-                this.sleepRecords = FXCollections.observableMap(new TreeMap<>());
-            }
+            assertEqual(parser.nextName(), "sleepRecords");
+            parser.nextToken();
+            parseJsonMap(sleepMap, parser, LocalDate::parse, Sleep::new, version);
+        }
+        catch (JsonAssertException | JacksonIOException e) {
+            this.sleepStart.setValue(null);
+            sleepMap.clear();
+        }
+        finally {
+            this.sleepRecords = FXCollections.observableMap(sleepMap);
+        }
 
-            // Parse workout records
-            try (JsonParser parser = mapper.createParser(workoutJson)) {
-                parser.nextToken();
-                assertEqual(parser.nextName(), "version");
-                assertVersion(parser.nextIntValue(0), Workout.class);
+        // Parse workout records
+        this.exerciseList = FXCollections.observableArrayList();
+        this.workoutRecords = FXCollections.observableArrayList();
+        try (JsonParser parser = mapper.createParser(workoutJson)) {
+            parser.nextToken();
+            assertEqual(parser.nextName(), "version");
+            int version = parser.nextIntValue(0);
 
-                assertEqual(parser.nextName(), "workoutProgressStart");
-                if (parser.nextToken() == JsonToken.VALUE_STRING)
-                    this.workoutStart.setValue(LocalDateTime.parse(parser.getString()));
-                else
-                    assertEqual(parser.currentToken(), JsonToken.VALUE_NULL);
+            assertEqual(parser.nextName(), "workoutProgressStart");
+            if (parser.nextToken() == JsonToken.VALUE_STRING)
+                this.workoutStart.setValue(LocalDateTime.parse(parser.getString()));
+            else
+                assertEqual(parser.currentToken(), JsonToken.VALUE_NULL);
 
-                assertEqual(parser.nextName(), "exercises");
-                parser.nextToken();
-                this.exerciseList = FXCollections.observableList(parser.readValueAs(new TypeReference<>() {}));
+            assertEqual(parser.nextName(), "exercises");
+            parser.nextToken();
+            parseJsonList(this.exerciseList, parser, Exercise::new, version);
 
-                assertEqual(parser.nextName(), "workoutRecords");
-                parser.nextToken();
-                this.workoutRecords = FXCollections.observableList(parser.readValueAs(new TypeReference<>() {}));
-            } catch (JsonAssertException | JacksonIOException e) {
-                this.workoutStart.setValue(null);
-                this.exerciseList = FXCollections.observableArrayList();
-                this.workoutRecords = FXCollections.observableArrayList();
-            }
+            assertEqual(parser.nextName(), "workoutRecords");
+            parser.nextToken();
+            parseJsonList(this.workoutRecords, parser, Workout::new, version);
+        } catch (JsonAssertException | JacksonIOException e) {
+            this.exerciseList.clear();
+            this.workoutStart.setValue(null);
+            this.workoutRecords.clear();
+        }
 
-            // Parse tasks
-            try (JsonParser parser = mapper.createParser(taskJson)) {
-                parser.nextToken();
-                assertEqual(parser.nextName(), "version");
-                assertVersion(parser.nextIntValue(0), Task.class);
+        // Parse tasks
+        this.taskList = FXCollections.observableArrayList();
+        try (JsonParser parser = mapper.createParser(taskJson)) {
+            parser.nextToken();
+            assertEqual(parser.nextName(), "version");
+            int version =  parser.nextIntValue(0);
 
-                assertEqual(parser.nextName(), "tasks");
-                parser.nextToken();
-                this.taskList = FXCollections.observableList(parser.readValueAs(new TypeReference<>() {}));
-            } catch (JsonAssertException | JacksonIOException e) {
-                this.taskList = FXCollections.observableArrayList();
-            }
+            assertEqual(parser.nextName(), "tasks");
+            parser.nextToken();
+            parseJsonList(this.taskList, parser, Task::new, version);
+        } catch (JsonAssertException | JacksonIOException e) {
+            this.taskList.clear();
+        }
 
-            // Parse lists
-            this.twigLists = FXCollections.observableArrayList();
-            try (JsonParser parser = mapper.createParser(listJson)) {
-                parser.nextToken();
-                assertEqual(parser.nextName(), "version");
-                assertVersion(parser.nextIntValue(0), TwigList.class);
+        // Parse lists
+        this.twigLists = FXCollections.observableArrayList();
+        try (JsonParser parser = mapper.createParser(listJson)) {
+            parser.nextToken();
+            assertEqual(parser.nextName(), "version");
+            int version =  parser.nextIntValue(0);
 
-                assertEqual(parser.nextName(), "lists");
-                parser.nextToken();
-                this.twigLists = FXCollections.observableList(parser.readValueAs(new TypeReference<>() {}));
-            } catch (JsonAssertException | JacksonIOException e) {
-                this.twigLists = FXCollections.observableArrayList();
-            }
+            assertEqual(parser.nextName(), "lists");
+            parser.nextToken();
+            parseJsonList(this.twigLists, parser, TwigList::new, version);
+        } catch (JsonAssertException | JacksonIOException e) {
+            this.twigLists.clear();
+        }
 
-            // Parse routines
-            try (JsonParser parser = mapper.createParser(routineJson)) {
-                parser.nextToken();
-                assertEqual(parser.nextName(), "version");
-                assertVersion(parser.nextIntValue(0), Routine.class);
+        // Parse routines
+        this.routineList = FXCollections.observableArrayList();
+        try (JsonParser parser = mapper.createParser(routineJson)) {
+            parser.nextToken();
+            assertEqual(parser.nextName(), "version");
+            int version =  parser.nextIntValue(0);
 
-                assertEqual(parser.nextName(), "routines");
-                parser.nextToken();
-                this.routineList = FXCollections.observableList(parser.readValueAs(new TypeReference<>() {}));
-            } catch (JsonAssertException | JacksonIOException e) {
-                this.routineList = FXCollections.observableArrayList();
-            }
+            assertEqual(parser.nextName(), "routines");
+            parser.nextToken();
+            parseJsonList(this.routineList, parser, Routine::new, version);
+        } catch (JsonAssertException | JacksonIOException e) {
+            this.routineList.clear();
+        }
 
-            // Parse journals
-            try (JsonParser parser = mapper.createParser(journalJson)) {
-                parser.nextToken();
-                assertEqual(parser.nextName(), "version");
-                assertVersion(parser.nextIntValue(0), Journal.class);
+        // Parse journals
+        try (JsonParser parser = mapper.createParser(journalJson)) {
+            parser.nextToken();
+            assertEqual(parser.nextName(), "version");
+            int version =  parser.nextIntValue(0);
 
-                assertEqual(parser.nextName(), "journals");
-                parser.nextToken();
-                this.journalMap = FXCollections.observableMap(parser.readValueAs(new TypeReference<SortedMap<LocalDate, Journal>>() {}));
-            } catch (JsonAssertException | JacksonIOException e) {
-                this.journalMap = FXCollections.observableMap(new TreeMap<>());
-            }
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException(e);
+            SortedMap<LocalDate, Journal> journalMap = new TreeMap<>();
+            assertEqual(parser.nextName(), "journals");
+            parser.nextToken();
+            parseJsonMap(journalMap, parser, LocalDate::parse, Journal::new, version);
+            this.journalMap = FXCollections.observableMap(journalMap);
+//            this.journalMap = FXCollections.observableMap(parser.readValueAs(new TypeReference<SortedMap<LocalDate, Journal>>() {}));
+        } catch (JsonAssertException | JacksonIOException e) {
+            this.journalMap = FXCollections.observableMap(new TreeMap<>());
         }
     }
 
     private void assertEqual(Object actual, Object expected) throws JsonAssertException {
         if (!expected.equals(actual))
-            throw new JsonAssertException();
+            throw new JsonAssertException("JSON parse encountered unexpected value. Expected: " + expected + ", actual: " + actual);
     }
 
-    private void assertVersion(int version, Class<? extends HasVersion> tClass) throws JsonAssertException, NoSuchFieldException, IllegalAccessException {
+    private <T> void parseJsonList(List<T> list, JsonParser parser, Callback<TwigJsonNode, T> callback, int version) {
+        parser.nextToken();
+        while (parser.currentToken() != JsonToken.END_ARRAY) {
+            JsonNode node = parser.readValueAsTree();
+            T value = callback.call(new TwigJsonNode(node, version));
+            list.add(value);
+            parser.nextToken();
+        }
+    }
 
-        int currentVersion = tClass.getField("VERSION").getInt(null);
-        if (version < 1 || version > currentVersion)
-            throw new JsonAssertException();
-
-        if (version < currentVersion) {
-            // TODO: implement fallback for older version
-            throw new JsonAssertException();
+    private <K, V> void parseJsonMap(Map<K, V> map, JsonParser parser, Callback<String, K> keyCallback, Callback<TwigJsonNode, V> valueCallback, int version) {
+        parser.nextToken();
+        while (parser.currentToken() != JsonToken.END_OBJECT) {
+            K key = keyCallback.call(parser.currentName());
+            parser.nextToken();
+            JsonNode node = parser.readValueAsTree();
+            V value = valueCallback.call(new TwigJsonNode(node, version));
+            map.put(key, value);
+            parser.nextToken();
         }
     }
 

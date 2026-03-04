@@ -1,5 +1,6 @@
 package ninjamica.tasktwig;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -10,16 +11,19 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import tools.jackson.databind.JsonNode;
 
 @JsonIncludeProperties({"text", "routines", "tasks"})
-public class Journal extends TaskTwig.HasVersion{
+public record Journal(StringProperty text,
+                      @JsonGetter("routines") ObservableList<String> completedRoutines,
+                      @JsonGetter("tasks") ObservableList<String> completedTasks) {
     public static final int VERSION = 2;
 
-    private final StringProperty text = new SimpleStringProperty();
-    private final ObservableList<String> completedRoutines = FXCollections.observableArrayList();
-    private final ObservableList<String> completedTasks = FXCollections.observableArrayList();
-
-    public Journal() {}
+    public Journal() {
+        this(new SimpleStringProperty(),
+                FXCollections.observableArrayList(),
+                FXCollections.observableArrayList());
+    }
 
     @JsonCreator
     public Journal(
@@ -27,9 +31,36 @@ public class Journal extends TaskTwig.HasVersion{
         @JsonProperty("routines") List<String> routines, 
         @JsonProperty("tasks") List<String> tasks)
     {
-        this.text.setValue(text);
-        completedRoutines.addAll(routines);
-        completedTasks.addAll(tasks);
+        this(new SimpleStringProperty(text),
+             FXCollections.observableArrayList(routines),
+             FXCollections.observableArrayList(tasks));
+    }
+
+    public Journal(TaskTwig.TwigJsonNode twigNode) {
+        JsonNode node = twigNode.node();
+        String text;
+        List<String> routines = new ArrayList<>();
+        List<String> tasks = new ArrayList<>();
+
+        if (twigNode.version() == 2) {
+            text = node.get("text").asString();
+
+            for (JsonNode routineNode : node.get("routines")) {
+                routines.add(routineNode.asString());
+            }
+
+            for (JsonNode taskNode : node.get("tasks")) {
+                tasks.add(taskNode.asString());
+            }
+        }
+        else if(twigNode.version() == 1) {
+            text = node.get("text").asString();
+        }
+        else {
+            throw new TaskTwig.JsonVersionException("Unsupported Journal version: " + twigNode.version());
+        }
+
+        this(text, routines, tasks);
     }
 
     public StringProperty textProperty() {
@@ -40,14 +71,5 @@ public class Journal extends TaskTwig.HasVersion{
     public String getText() {
         return text.getValue();
     }
-    
-    @JsonGetter("routines")
-    public ObservableList<String> completedRoutines() {
-        return this.completedRoutines;
-    }
-    
-    @JsonGetter("tasks")
-    public ObservableList<String> completedTasks() {
-        return this.completedTasks;
-    }
+
 }

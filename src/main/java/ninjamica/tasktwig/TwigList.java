@@ -7,22 +7,16 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import tools.jackson.databind.JsonNode;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
-public final class TwigList extends TaskTwig.HasVersion {
+public record TwigList(StringProperty name, @JsonGetter("items") ObservableList<TwigListItem> items,
+                       BooleanProperty expanded) {
     public static final int VERSION = 1;
-
-    private final StringProperty name;
-    private final ObservableList<TwigListItem> items;
-    private final BooleanProperty expanded;
-
-    public TwigList(StringProperty name, ObservableList<TwigListItem> items, BooleanProperty expanded) {
-        this.name = name;
-        this.items = items;
-        this.expanded = expanded;
-    }
 
     public record TwigListItem(StringProperty name, BooleanProperty done) {
         @JsonCreator
@@ -58,6 +52,28 @@ public final class TwigList extends TaskTwig.HasVersion {
         this(new SimpleStringProperty(name), FXCollections.observableArrayList(), new SimpleBooleanProperty(true));
     }
 
+    public TwigList(TaskTwig.TwigJsonNode twigNode) {
+        JsonNode node = twigNode.node();
+        String name = null;
+        List<TwigListItem> items = new ArrayList<>();
+        boolean expanded = true;
+
+        if (twigNode.version() == 1) {
+            name = node.get("name").asString();
+
+            for (JsonNode item : node.get("items")) {
+                items.add(new TwigListItem(item.get("name").asString(), item.get("done").asBoolean()));
+            }
+
+            expanded = node.get("expanded").asBoolean();
+        }
+        else {
+            throw new TaskTwig.JsonVersionException("Unsupported List version: " + twigNode.version());
+        }
+
+        this(name, items, expanded);
+    }
+
     @JsonGetter("name")
     public String getName() {
         return name.get();
@@ -67,42 +83,5 @@ public final class TwigList extends TaskTwig.HasVersion {
     public boolean isExpanded() {
         return expanded.get();
     }
-
-    public StringProperty name() {
-        return name;
-    }
-
-    @JsonGetter("items")
-    public ObservableList<TwigListItem> items() {
-        return items;
-    }
-
-    public BooleanProperty expanded() {
-        return expanded;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || obj.getClass() != this.getClass()) return false;
-        var that = (TwigList) obj;
-        return Objects.equals(this.name, that.name) &&
-                Objects.equals(this.items, that.items) &&
-                Objects.equals(this.expanded, that.expanded);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(name, items, expanded);
-    }
-
-    @Override
-    public String toString() {
-        return "TwigList[" +
-                "name=" + name + ", " +
-                "items=" + items + ", " +
-                "expanded=" + expanded + ']';
-    }
-
 
 }

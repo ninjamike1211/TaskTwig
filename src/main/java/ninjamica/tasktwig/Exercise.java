@@ -1,8 +1,8 @@
 package ninjamica.tasktwig;
 
-import java.io.Serializable;
+import tools.jackson.databind.JsonNode;
 
-public record Exercise(String name, ExerciseUnit unit) implements Serializable, Comparable<Exercise> {
+public record Exercise(String name, ExerciseUnit unit) {
 
     public enum ExerciseUnit {
         COUNT(""),
@@ -21,8 +21,8 @@ public record Exercise(String name, ExerciseUnit unit) implements Serializable, 
         this(split[1], ExerciseUnit.valueOf(split[3]));
     }
 
-    @Override
-    public int compareTo(Exercise other) {
-        return this.name.compareTo(other.name);
+    public Exercise(TaskTwig.TwigJsonNode twigNode) {
+        JsonNode node = twigNode.node();
+        this(node.get("name").asString(), ExerciseUnit.valueOf(node.get("unit").asString()));
     }
 }
