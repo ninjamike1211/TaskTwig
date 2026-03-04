@@ -524,11 +524,13 @@ public class TaskTwigController {
             row.setOnMouseClicked(event -> {
                if (!row.isEmpty() && row.getIndex() != -1) {
                    if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2) {
-                       Node content = new RoutineContent(table.getItems().get(row.getIndex()));
+                       Routine routine = table.getItems().get(row.getIndex());
+                       Node content = new RoutineContent(routine);
                        PopOver popOver = new PopOver(content);
+                       popOver.titleProperty().bindBidirectional(routine.name());
                        popOver.setArrowLocation(PopOver.ArrowLocation.TOP_LEFT);
+                       popOver.getRoot().getStylesheets().clear();
                        popOver.show(row);
-                       popOver.getRoot().getStylesheets().add(darkStylesheet);
                    }
                }
             });
