@@ -44,7 +44,7 @@ public interface TwigInterval {
      */
     boolean isToday();
 
-    public static TwigInterval parseFromJson(JsonNode node) {
+    static TwigInterval parseFromJson(JsonNode node) {
         switch (node.get("@type").asString()) {
             case "daily" -> {
                 return new DailyInterval();

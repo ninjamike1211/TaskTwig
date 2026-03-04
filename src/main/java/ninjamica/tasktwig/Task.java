@@ -34,10 +34,10 @@ public record Task (StringProperty name, ObjectProperty<TwigInterval> interval, 
 
     public Task(TaskTwig.TwigJsonNode twigNode) {
         JsonNode node = twigNode.node();
-        String name = null;
-        TwigInterval interval = null;
-        LocalDate lastDone = null;
-        LocalTime dueTime = null;
+        String name;
+        TwigInterval interval;
+        LocalDate lastDone;
+        LocalTime dueTime;
 
         if (twigNode.version() == 3) {
             name = node.get("name").asString();

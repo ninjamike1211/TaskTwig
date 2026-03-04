@@ -99,7 +99,7 @@ public class WorkoutDialog extends Dialog<Map<Exercise, Integer>> {
                     return null;
                 }
 
-                Map<Exercise, Integer> exercises = new TreeMap<>();
+                Map<Exercise, Integer> exercises = new HashMap<>();
                 for (ExerciseHolder exerciseHolder : selectedExercises) {
                     exercises.put(exerciseHolder.exercise, exerciseHolder.count.getValue());
                 }
@@ -116,7 +116,7 @@ public class WorkoutDialog extends Dialog<Map<Exercise, Integer>> {
         dialogExerciseCol.setCellValueFactory(holder -> new SimpleStringProperty(holder.getValue().exercise.name()));
         dialogCountCol.setCellValueFactory(new PropertyValueFactory<>("count"));
         dialogCountCol.setCellFactory(SpinnerTableCell.forTableColumn());
-        dialogCloseCol.setCellFactory(e -> new CloseTableCell<>());
+        dialogCloseCol.setCellFactory(column -> new CloseTableCell<>());
         dialogTable.setItems(selectedExercises);
 
         dialogChoiceBox.setItems(FXCollections.observableList(twig.getExerciseList()));

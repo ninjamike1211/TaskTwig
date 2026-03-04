@@ -58,7 +58,7 @@ public class RoutineContent extends AnchorPane {
 
             nameTextField.textProperty().bindBidirectional(routine.name());
             typeChoiceBox.setItems(types);
-            typeChoiceBox.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {updateType(routine, oldValue, newValue);});
+            typeChoiceBox.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> updateType(routine, oldValue, newValue));
 
             switch (routine.getInterval()) {
                 case TwigInterval.DailyInterval daily -> {
@@ -107,9 +107,8 @@ public class RoutineContent extends AnchorPane {
                    routine.startTime().set(startTimeSpinner.getValue());
                }
             });
-            startTimeSpinner.valueProperty().addListener((observable, oldValue, newValue) -> {
-                routine.startTime().set(newValue);
-            });
+            startTimeSpinner.valueProperty().addListener(
+                    (observable, oldValue, newValue) -> routine.startTime().set(newValue));
 
             endTimeCheckbox.selectedProperty().addListener((observable, oldValue, newValue) -> {
                if (newValue) {
@@ -119,9 +118,8 @@ public class RoutineContent extends AnchorPane {
                    routine.endTime().set(endTimeSpinner.getValue());
                }
             });
-            endTimeSpinner.valueProperty().addListener((observable, oldValue, newValue) -> {
-                routine.endTime().set(newValue);
-            });
+            endTimeSpinner.valueProperty().addListener(
+                    (observable, oldValue, newValue) -> routine.endTime().set(newValue));
 
         }
         catch (IOException e) {

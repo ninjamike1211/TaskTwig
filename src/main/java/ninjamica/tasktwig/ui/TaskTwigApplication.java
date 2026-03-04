@@ -11,12 +11,9 @@ public class TaskTwigApplication extends Application {
     private TaskTwigController controller;
     @Override
     public void start(Stage stage) throws IOException {
-//        Application.setUserAgentStylesheet(new NordDark().getUserAgentStylesheet());
 
         FXMLLoader fxmlLoader = new FXMLLoader(TaskTwigApplication.class.getResource("fxml/main-view.fxml"));
         Scene scene = new Scene(fxmlLoader.load());
-//        scene.getRoot().setStyle("-fx-base:black");
-//        scene.getStylesheets().add(TaskTwigApplication.class.getResource("fxml/dark-theme.css").toExternalForm());
         stage.setTitle("TaskTwig");
         stage.setScene(scene);
         stage.show();

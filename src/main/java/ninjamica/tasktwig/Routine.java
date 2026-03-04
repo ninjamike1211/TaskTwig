@@ -37,10 +37,10 @@ public record Routine(StringProperty name, ObjectProperty<LocalTime> startTime, 
 
     public Routine(TaskTwig.TwigJsonNode twigNode) {
         JsonNode node = twigNode.node();
-        String name = null;
-        LocalTime start = null, end = null;
-        TwigInterval interval = null;
-        LocalDate lastDone = null;
+        String name;
+        LocalTime start, end;
+        TwigInterval interval;
+        LocalDate lastDone;
 
         if (twigNode.version() == 1) {
             name = node.get("name").asString();

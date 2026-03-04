@@ -1,6 +1,8 @@
 package ninjamica.tasktwig;
 
-import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -11,8 +13,6 @@ import tools.jackson.databind.JsonNode;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 
 public record TwigList(StringProperty name, @JsonGetter("items") ObservableList<TwigListItem> items,
                        BooleanProperty expanded) {
@@ -54,9 +54,9 @@ public record TwigList(StringProperty name, @JsonGetter("items") ObservableList<
 
     public TwigList(TaskTwig.TwigJsonNode twigNode) {
         JsonNode node = twigNode.node();
-        String name = null;
+        String name;
         List<TwigListItem> items = new ArrayList<>();
-        boolean expanded = true;
+        boolean expanded;
 
         if (twigNode.version() == 1) {
             name = node.get("name").asString();

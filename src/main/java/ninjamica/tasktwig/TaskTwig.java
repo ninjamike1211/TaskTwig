@@ -7,13 +7,16 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.ObservableMap;
 import javafx.util.Callback;
-import tools.jackson.core.*;
+import tools.jackson.core.JsonEncoding;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
 import tools.jackson.core.exc.JacksonIOException;
-import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
-import java.io.*;
+import java.io.File;
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -54,9 +57,6 @@ public class TaskTwig implements Serializable {
     public TaskTwig() {
         this.readFromFile();
         TaskTwig.instance = this;
-//        routineList = FXCollections.observableArrayList();
-//        routineList.add(new Routine("test1", LocalTime.of(6,00), null, new TwigInterval.DailyInterval()));
-//        routineList.add(new Routine("test2", null, LocalTime.of(18,30), new TwigInterval.WeekInterval(DayOfWeek.MONDAY, DayOfWeek.THURSDAY, DayOfWeek.FRIDAY)));
     }
 
     static TaskTwig instance() {
@@ -95,11 +95,8 @@ public class TaskTwig implements Serializable {
         if (time.isBefore(dayStart))
             return true;
 
-        else if (time.isBefore(nightStart))
-            return false;
-
         else
-            return true;
+            return time.isAfter(nightStart);
     }
 
     public static boolean isNight() {
@@ -495,7 +492,6 @@ public class TaskTwig implements Serializable {
 
             System.out.println("Entered command: " + command);
             commandSplit = command.split(" ");
-            command = "";
 
             switch (commandSplit[0]) {
 
@@ -532,7 +528,7 @@ public class TaskTwig implements Serializable {
                         case "finish":
                             tracker.printExercises();
                             List<Exercise> exerciseList = tracker.getExerciseList();
-                            Map<Exercise, Integer> exercises = new TreeMap<>();
+                            Map<Exercise, Integer> exercises = new HashMap<>();
                             String indexStr = "";
 
                             while (!indexStr.equals("done")) {

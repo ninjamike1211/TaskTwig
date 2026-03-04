@@ -29,7 +29,7 @@ public class TimeSpinner {
         this.timeSpinner = spinner;
         spinner.setEditable(true);
 
-        SpinnerValueFactory<LocalTime> valueFactory = new SpinnerValueFactory<LocalTime>() {
+        SpinnerValueFactory<LocalTime> valueFactory = new SpinnerValueFactory<>() {
             @Override
             public void decrement(int steps) {
                 switch (editSection) {
@@ -65,7 +65,7 @@ public class TimeSpinner {
             }
         };
 
-        StringConverter<LocalTime> timeConverter = new StringConverter<LocalTime>() {
+        StringConverter<LocalTime> timeConverter = new StringConverter<>() {
             @Override
             public String toString(LocalTime time) {
                 return time.format(timeFormat);

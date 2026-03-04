@@ -102,7 +102,7 @@ public class TaskDialog extends Dialog<TaskDialog.TaskReturn> {
     @FXML
     private void initialize() {
         typeChoiceBox.setItems(types);
-        typeChoiceBox.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {updateVbox();});
+        typeChoiceBox.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> updateVbox());
         typeChoiceBox.getSelectionModel().select(0);
 
         new TimeSpinner(dueTimeSpinner);

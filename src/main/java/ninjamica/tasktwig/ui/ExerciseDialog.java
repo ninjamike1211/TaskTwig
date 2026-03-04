@@ -29,8 +29,6 @@ public class ExerciseDialog extends Dialog<List<Exercise>> {
     private TableColumn<Exercise, String> unitCol;
     @FXML
     private TableColumn<Exercise, String> closeCol;
-    @FXML
-    private Button addButton;
 
     private final List<Exercise> exercises;
 
@@ -66,10 +64,10 @@ public class ExerciseDialog extends Dialog<List<Exercise>> {
     private void initialize() {
         nameCol.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().name()));
         unitCol.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().unit().name()));
-        closeCol.setCellFactory(e -> new CloseTableCell<>());
+        closeCol.setCellFactory(column -> new CloseTableCell<>());
         exerciseTable.setItems(FXCollections.observableList(exercises));
 
-        unitChoiceBox.setConverter(new StringConverter<Exercise.ExerciseUnit>() {
+        unitChoiceBox.setConverter(new StringConverter<>() {
             @Override
             public String toString(Exercise.ExerciseUnit unit) {
                 if (unit == null) {

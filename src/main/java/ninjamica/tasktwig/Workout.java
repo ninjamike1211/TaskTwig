@@ -25,7 +25,7 @@ public record Workout(@JsonGetter("start") LocalDateTime start,
 
     public Workout(TaskTwig.TwigJsonNode twigNode) {
         JsonNode node = twigNode.node();
-        LocalDateTime start = null, end = null;
+        LocalDateTime start, end;
         Map<Exercise, Integer> exercises = new HashMap<>();
 
         if (twigNode.version() == 1) {
