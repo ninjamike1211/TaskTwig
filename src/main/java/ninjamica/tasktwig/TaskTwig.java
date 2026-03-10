@@ -1,5 +1,12 @@
 package ninjamica.tasktwig;
 
+import com.dropbox.core.DbxException;
+import com.dropbox.core.DbxRequestConfig;
+import com.dropbox.core.v2.DbxClientV2;
+import com.dropbox.core.v2.files.ListFolderResult;
+import com.dropbox.core.v2.files.Metadata;
+import com.dropbox.core.v2.files.WriteMode;
+import com.dropbox.core.v2.users.FullAccount;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -15,8 +22,7 @@ import tools.jackson.core.exc.JacksonIOException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
-import java.io.File;
-import java.io.Serializable;
+import java.io.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -57,6 +63,12 @@ public class TaskTwig implements Serializable {
     public TaskTwig() {
         this.readFromFile();
         TaskTwig.instance = this;
+
+        try {
+            initDbxClient();
+        } catch (DbxException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     static TaskTwig instance() {
@@ -470,6 +482,53 @@ public class TaskTwig implements Serializable {
             V value = valueCallback.call(new TwigJsonNode(node, version));
             map.put(key, value);
             parser.nextToken();
+        }
+    }
+
+    private DbxClientV2 initDbxClient() throws DbxException {
+        String ACCESS_TOKEN = "";
+        DbxRequestConfig config = DbxRequestConfig.newBuilder("TaskTwig/alpha").build();
+        DbxClientV2 client = new DbxClientV2(config, ACCESS_TOKEN);
+
+        FullAccount account = client.users().getCurrentAccount();
+        System.out.println(account.getName().getDisplayName());
+
+
+
+//        uploadDbxFiles(client);
+        downloadDbxFiles(client);
+
+        return client;
+    }
+
+    private void downloadDbxFiles(DbxClientV2 client) throws DbxException {
+        ListFolderResult result = client.files().listFolder("");
+        while (true) {
+            for (Metadata metadata : result.getEntries()) {
+                System.out.println(metadata.getPathLower());
+                try (OutputStream fileOut = new FileOutputStream("data/dbx/"+metadata.getName())) {
+                    client.files().downloadBuilder(metadata.getPathLower()).download(fileOut);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            if (!result.getHasMore()) {
+                break;
+            }
+
+            result = client.files().listFolderContinue(result.getCursor());
+        }
+    }
+
+    private void uploadDbxFiles(DbxClientV2 client) throws DbxException {
+        for (File file : new File("data").listFiles(f -> f.getName().endsWith(".json"))) {
+
+            try (InputStream fileStream = new FileInputStream(file)) {
+                client.files().uploadBuilder("/" + file.getName()).withMode(WriteMode.OVERWRITE).uploadAndFinish(fileStream);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 

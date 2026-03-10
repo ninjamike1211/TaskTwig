@@ -3,7 +3,9 @@ package ninjamica.tasktwig.ui;
 import javafx.beans.property.*;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
 import javafx.collections.MapChangeListener;
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
@@ -21,6 +23,7 @@ import javafx.stage.Stage;
 import javafx.util.Callback;
 import javafx.util.StringConverter;
 import ninjamica.tasktwig.*;
+import ninjamica.tasktwig.TwigList.TwigListItem;
 import org.controlsfx.control.PopOver;
 
 import java.io.IOException;
@@ -37,91 +40,51 @@ import java.util.Optional;
 
 public class TaskTwigController {
 
-    @FXML
-    private ListView<Routine> todayRoutineListView;
-    @FXML
-    private ListView<Task> todayTaskListView;
-    @FXML
-    private Button todaySleepButton;
-    @FXML
-    private Button todayExerciseButton;
-    @FXML
-    private TextArea todayJournalTextArea;
+    @FXML private ListView<Routine> todayRoutineListView;
+    @FXML private ListView<Task> todayTaskListView;
+    @FXML private Button todaySleepButton;
+    @FXML private Button todayExerciseButton;
+    @FXML private TextArea todayJournalTextArea;
 
-    @FXML
-    private VBox sleepVBox;
-    @FXML
-    private Button sleepButton;
-    @FXML
-    private Label sleepStatusLabel;
-    @FXML
-    private TableView<Sleep> sleepTableView;
-    @FXML
-    private TableColumn<Sleep, LocalDate> sleepDateCol;
-    @FXML
-    private TableColumn<Sleep, LocalTime> sleepStartCol;
-    @FXML
-    private TableColumn<Sleep, LocalTime> sleepEndCol;
-    @FXML
-    private TableColumn<Sleep, Float> sleepLengthCol;
-    @FXML
-    private HBox sleepLenChartPane;
-    @FXML
-    private HBox sleepTimeChartPane;
-    @FXML
-    private LineChart<String, Float> sleepTimeChart;
-    @FXML
-    private AreaChart<String, Float> sleepLenChart;
-    @FXML
-    private NumberAxis  sleepTimeNumAxis;
+    @FXML private VBox sleepVBox;
+    @FXML private Button sleepButton;
+    @FXML private Label sleepStatusLabel;
+    @FXML private TableView<Sleep> sleepTableView;
+    @FXML private TableColumn<Sleep, LocalDate> sleepDateCol;
+    @FXML private TableColumn<Sleep, LocalTime> sleepStartCol;
+    @FXML private TableColumn<Sleep, LocalTime> sleepEndCol;
+    @FXML private TableColumn<Sleep, Float> sleepLengthCol;
+    @FXML private HBox sleepLenChartPane;
+    @FXML private HBox sleepTimeChartPane;
+    @FXML private LineChart<String, Float> sleepTimeChart;
+    @FXML private AreaChart<String, Float> sleepLenChart;
+    @FXML private NumberAxis sleepTimeNumAxis;
 
-    @FXML
-    private Button workoutButton;
-    @FXML
-    private Label workoutStatusLabel;
-    @FXML
-    private TableView<Workout> workoutTableView;
-    @FXML
-    private TableColumn<Workout, String> workoutDateCol;
-    @FXML
-    private TableColumn<Workout, Float> workoutLengthCol;
-    @FXML
-    private TableColumn<Workout, String> workoutExerciseCol;
+    @FXML private Button workoutButton;
+    @FXML private Label workoutStatusLabel;
+    @FXML private TableView<Workout> workoutTableView;
+    @FXML private TableColumn<Workout, String> workoutDateCol;
+    @FXML private TableColumn<Workout, Float> workoutLengthCol;
+    @FXML private TableColumn<Workout, String> workoutExerciseCol;
 
-    @FXML
-    private TableView<Task> taskTableView;
-    @FXML
-    private TableColumn<Task, Boolean> taskDoneCol;
-    @FXML
-    private TableColumn<Task, String> taskNameCol;
-    @FXML
-    private TableColumn<Task, String> taskDateTimeCol;
-    @FXML
-    private TableColumn<Task, String> taskRepeatCol;
-    @FXML
-    private TreeView<Object> listTree;
+    @FXML private TableView<Task> taskTableView;
+    @FXML private TableColumn<Task, Boolean> taskDoneCol;
+    @FXML private TableColumn<Task, String> taskNameCol;
+    @FXML private TableColumn<Task, String> taskDateTimeCol;
+    @FXML private TableColumn<Task, String> taskRepeatCol;
+    @FXML private TreeView<Object> listTree;
 
-    @FXML
-    private TableView<Routine> routineTable;
-    @FXML
-    private TableColumn<Routine, String> routineNameCol;
-    @FXML
-    private TableColumn<Routine, TwigInterval> routineIntervalCol;
-    @FXML
-    private TableColumn<Routine, LocalTime> routineStartCol;
-    @FXML
-    private TableColumn<Routine, LocalTime> routineEndCol;
-    @FXML
-    private Button routineButton;
+    @FXML private TableView<Routine> routineTable;
+    @FXML private TableColumn<Routine, String> routineNameCol;
+    @FXML private TableColumn<Routine, TwigInterval> routineIntervalCol;
+    @FXML private TableColumn<Routine, LocalTime> routineStartCol;
+    @FXML private TableColumn<Routine, LocalTime> routineEndCol;
+    @FXML private Button routineButton;
 
-    @FXML
-    private ListView<LocalDate> journalListView;
-    @FXML
-    private TextArea journalTextArea;
-    @FXML
-    private ListView<String> journalRoutineList;
-    @FXML
-    private ListView<String> journalTaskList;
+    @FXML private ListView<LocalDate> journalListView;
+    @FXML private TextArea journalTextArea;
+    @FXML private ListView<String> journalRoutineList;
+    @FXML private ListView<String> journalTaskList;
 
     private final TaskTwig twig = new TaskTwig();
     private Stage stage;
@@ -277,7 +240,7 @@ public class TaskTwigController {
         sleepEndCol.setCellValueFactory(sleep -> new SimpleObjectProperty<>(sleep.getValue().end().toLocalTime()));
         sleepLengthCol.setCellValueFactory(sleep -> new SimpleFloatProperty(sleep.getValue().length().toMinutes() / 60f).asObject());
 
-        sleepDateCol.setCellFactory(col -> new TableCell<Sleep, LocalDate>() {
+        sleepDateCol.setCellFactory(col -> new TableCell<>() {
             @Override
             protected void updateItem(LocalDate item, boolean empty) {
                 super.updateItem(item, empty);
@@ -456,14 +419,12 @@ public class TaskTwigController {
                                 dialog.setTitle("Add item to " + list.getName());
                                 dialog.setHeaderText("Add item to " + list.getName());
                                 dialog.showAndWait().ifPresent(result -> {
-                                    TwigList.TwigListItem newItem = new TwigList.TwigListItem(result);
-                                    list.items().add(newItem);
-                                    getTreeItem().getChildren().add(new TreeItem<>(newItem));
+                                    list.items().add(new TwigListItem(result));
                                 });
                             });
                             contextMenu.getItems().addAll(deleteItem, addItem);
                         }
-                        case TwigList.TwigListItem listItem -> {
+                        case TwigListItem listItem -> {
                             Label label = new Label();
                             label.textProperty().bind(listItem.name());
 
@@ -486,10 +447,7 @@ public class TaskTwigController {
                             MenuItem deleteItem = new MenuItem("Delete");
 
                             TwigList list = (TwigList)(getTreeItem().getParent().getValue());
-                            deleteItem.setOnAction(event -> {
-                                getTreeItem().getParent().getChildren().remove(getTreeItem());
-                                list.items().remove(listItem);
-                            });
+                            deleteItem.setOnAction(event -> list.items().remove(listItem));
                             contextMenu.getItems().addAll(deleteItem);
                         }
                         default -> {
@@ -725,11 +683,36 @@ public class TaskTwigController {
     private TreeItem<Object> constructListTree(TwigList list) {
         TreeItem<Object> treeItem = new TreeItem<>(list);
 
-        for (TwigList.TwigListItem item : list.items()) {
+        for (TwigListItem item : list.items()) {
             treeItem.getChildren().add(new TreeItem<>(item));
         }
 
-        return  treeItem;
+        list.items().addListener((ListChangeListener.Change<? extends TwigList.TwigListItem> change) -> handleItemChange(change, treeItem));
+
+        return treeItem;
+    }
+
+    private void handleItemChange(ListChangeListener.Change<? extends TwigList.TwigListItem> change, TreeItem<Object> parent) {
+        ObservableList<TreeItem<Object>> treeChildren = parent.getChildren();
+        while (change.next()) {
+            if (change.wasPermutated()) {
+                for (int i = change.getFrom(); i < change.getTo(); ++i) {
+                    TreeItem<Object> cell = treeChildren.remove(i);
+                    treeChildren.add(change.getPermutation(i), cell);
+                }
+            }
+            else if (!change.wasUpdated()) {
+
+                if (change.wasRemoved()) {
+                    treeChildren.remove(change.getFrom(), change.getTo()+1);
+                }
+                if (change.wasAdded()) {
+                    for (int i = change.getFrom(); i < change.getTo(); i++) {
+                        treeChildren.add(i, new TreeItem<>(change.getList().get(i)));
+                    }
+                }
+            }
+        }
     }
 
     @FXML

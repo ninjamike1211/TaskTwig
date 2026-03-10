@@ -65,7 +65,7 @@ public class TaskDialog extends Dialog<TaskDialog.TaskReturn> {
     @FXML
     private Spinner<LocalTime> dueTimeSpinner;
 
-    private final static ObservableList<String> types = FXCollections.observableArrayList("Single", "Daily", "Weekly", "Monthly");
+    private final static ObservableList<String> types = FXCollections.observableArrayList("Single", "Daily", "Weekly", "Monthly", "No due date");
     private Task inputTask;
 
     public TaskDialog(Window owner) {
@@ -114,33 +114,36 @@ public class TaskDialog extends Dialog<TaskDialog.TaskReturn> {
         if (inputTask != null) {
             nameTextField.setText(inputTask.getName());
             switch (inputTask.getInterval()) {
-                case TwigInterval.SingleDayInterval singleTask -> {
+                case TwigInterval.SingleDayInterval singleInterval -> {
                     typeChoiceBox.getSelectionModel().select(0);
-                    dueDatePicker.setValue(singleTask.next());
+                    dueDatePicker.setValue(singleInterval.next());
                 }
-                case TwigInterval.DailyInterval dailyTask -> {
+                case TwigInterval.DailyInterval dailyInterval -> {
                     typeChoiceBox.getSelectionModel().select(1);
                 }
-                case TwigInterval.WeeklyInterval weeklyTask -> {
+                case TwigInterval.WeeklyInterval weeklyInterval -> {
                     typeChoiceBox.getSelectionModel().select(2);
-                    dayMButton.setSelected(weeklyTask.getDayOfWeekMap()[0]);
-                    dayTButton.setSelected(weeklyTask.getDayOfWeekMap()[1]);
-                    dayWButton.setSelected(weeklyTask.getDayOfWeekMap()[2]);
-                    dayThButton.setSelected(weeklyTask.getDayOfWeekMap()[3]);
-                    dayFButton.setSelected(weeklyTask.getDayOfWeekMap()[4]);
-                    daySaButton.setSelected(weeklyTask.getDayOfWeekMap()[5]);
-                    daySuButton.setSelected(weeklyTask.getDayOfWeekMap()[6]);
+                    dayMButton.setSelected(weeklyInterval.getDayOfWeekMap()[0]);
+                    dayTButton.setSelected(weeklyInterval.getDayOfWeekMap()[1]);
+                    dayWButton.setSelected(weeklyInterval.getDayOfWeekMap()[2]);
+                    dayThButton.setSelected(weeklyInterval.getDayOfWeekMap()[3]);
+                    dayFButton.setSelected(weeklyInterval.getDayOfWeekMap()[4]);
+                    daySaButton.setSelected(weeklyInterval.getDayOfWeekMap()[5]);
+                    daySuButton.setSelected(weeklyInterval.getDayOfWeekMap()[6]);
                 }
-                case TwigInterval.MonthlyInterval monthlyTask -> {
+                case TwigInterval.MonthlyInterval monthlyInterval -> {
                     typeChoiceBox.getSelectionModel().select(3);
                     StringBuilder dateString = new StringBuilder();
 
-                    for (int date : monthlyTask.getDueDays()) {
+                    for (int date : monthlyInterval.getDueDays()) {
                         dateString.append(date);
                         dateString.append(", ");
                     }
                     dateString.delete(dateString.length() - 2, dateString.length());
                     dateOfMonthField.setText(dateString.toString());
+                }
+                case TwigInterval.NoInterval noInterval-> {
+                    typeChoiceBox.getSelectionModel().select(4);
                 }
                 default -> typeChoiceBox.getSelectionModel().select(0);
             }
@@ -163,24 +166,15 @@ public class TaskDialog extends Dialog<TaskDialog.TaskReturn> {
         contentVbox.getChildren().clear();
         contentVbox.getChildren().addAll(namePane, typePane);
 
-        switch (typeChoiceBox.getValue()) {
-            case "Single":
-                contentVbox.getChildren().add(dueDatePane);
-                break;
-
-            case "Daily":
-                break;
-
-            case "Weekly":
-                contentVbox.getChildren().add(dayOfWeekPane);
-                break;
-
-            case "Monthly":
-                contentVbox.getChildren().add(dateOfMonthPane);
-                break;
+        switch (typeChoiceBox.getSelectionModel().getSelectedIndex()) {
+            case 0 -> contentVbox.getChildren().add(dueDatePane);
+            case 2 -> contentVbox.getChildren().add(dayOfWeekPane);
+            case 3 ->contentVbox.getChildren().add(dateOfMonthPane);
         }
 
         contentVbox.getChildren().add(dueTimePane);
+//        this.getDialogPane().resize(contentVbox.getWidth(), contentVbox.getHeight());
+        this.getDialogPane().getScene().getWindow().sizeToScene();
     }
 
     private TaskReturn createTask(ButtonType button) {
@@ -190,14 +184,14 @@ public class TaskDialog extends Dialog<TaskDialog.TaskReturn> {
 
         LocalTime dueTime = dueTimeCheckbox.isSelected() ? null : dueTimeSpinner.getValue();
 
-        switch (typeChoiceBox.getValue()) {
-            case "Single":
+        switch (typeChoiceBox.getSelectionModel().getSelectedIndex()) {
+            case 0:
                 return new TaskReturn(button.getButtonData(), new Task(nameTextField.getText(), dueTime, new TwigInterval.SingleDayInterval(dueDatePicker.getValue())));
 
-            case "Daily":
+            case 1:
                 return new TaskReturn(button.getButtonData(), new Task(nameTextField.getText(), dueTime, new TwigInterval.DailyInterval()));
 
-            case "Weekly":
+            case 2:
                 List<DayOfWeek> days = new ArrayList<>();
                 if (dayMButton.isSelected())
                     days.add(DayOfWeek.MONDAY);
@@ -216,7 +210,7 @@ public class TaskDialog extends Dialog<TaskDialog.TaskReturn> {
 
                 return new TaskReturn(button.getButtonData(), new Task(nameTextField.getText(), dueTime, new TwigInterval.WeeklyInterval(days)));
 
-            case "Monthly":
+            case 3:
                 String[] inputText = dateOfMonthField.getText().split(",");
                 Integer[] dates = new Integer[inputText.length];
 
@@ -225,6 +219,9 @@ public class TaskDialog extends Dialog<TaskDialog.TaskReturn> {
                 }
 
                 return new TaskReturn(button.getButtonData(), new Task(nameTextField.getText(), dueTime, new TwigInterval.MonthlyInterval(dates)));
+
+            case 4:
+                return new TaskReturn(button.getButtonData(), new Task(nameTextField.getText(), dueTime, new TwigInterval.NoInterval()));
 
             default:
                 return null;

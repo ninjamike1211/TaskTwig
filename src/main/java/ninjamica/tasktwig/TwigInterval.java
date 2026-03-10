@@ -19,7 +19,8 @@ import java.util.List;
         @JsonSubTypes.Type(value = TwigInterval.DailyInterval.class, name = "daily"),
         @JsonSubTypes.Type(value = TwigInterval.WeeklyInterval.class, name = "weekly"),
         @JsonSubTypes.Type(value = TwigInterval.MonthlyInterval.class, name = "monthly"),
-        @JsonSubTypes.Type(value = TwigInterval.SingleDayInterval.class, name = "singleDay")
+        @JsonSubTypes.Type(value = TwigInterval.SingleDayInterval.class, name = "singleDay"),
+        @JsonSubTypes.Type(value = TwigInterval.NoInterval.class, name = "none")
 })
 public interface TwigInterval {
 
@@ -68,6 +69,9 @@ public interface TwigInterval {
             }
             case "singleDay" -> {
                 return new SingleDayInterval(LocalDate.parse(node.get("date").asString()));
+            }
+            case "none" -> {
+                return new NoInterval();
             }
             default -> {
                 return null;
@@ -335,6 +339,30 @@ public interface TwigInterval {
         @JsonGetter("date")
         public LocalDate date() {
             return date.get();
+        }
+    }
+
+    @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY)
+    class NoInterval implements TwigInterval {
+
+        @Override
+        public LocalDate next() {
+            return null;
+        }
+
+        @Override
+        public LocalDate nextAfter() {
+            return null;
+        }
+
+        @Override
+        public LocalDate previous() {
+            return null;
+        }
+
+        @Override
+        public boolean isToday() {
+            return false;
         }
     }
 }

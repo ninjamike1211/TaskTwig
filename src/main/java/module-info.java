@@ -7,7 +7,9 @@ module ninjamica.tasktwig.tasktwig {
     requires atlantafx.base;
 
     requires transitive javafx.base;
-    requires transitive javafx.graphics; 
+    requires transitive javafx.graphics;
+    requires java.xml;
+    requires dropbox.core.sdk;
 
 
     opens ninjamica.tasktwig to javafx.fxml;
