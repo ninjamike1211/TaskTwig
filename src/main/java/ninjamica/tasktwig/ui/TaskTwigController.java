@@ -2,6 +2,7 @@ package ninjamica.tasktwig.ui;
 
 import com.dropbox.core.DbxException;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.beans.property.*;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
@@ -94,6 +95,9 @@ public class TaskTwigController {
     @FXML private ListView<String> journalTaskList;
 
     @FXML private PropertySheet settingsSheet;
+
+    @FXML private Button syncButton;
+    @FXML private Label syncLabel;
 
     private final TaskTwig twig = new TaskTwig();
     private Application application;
@@ -641,8 +645,8 @@ public class TaskTwigController {
         journalRoutineList.setSelectionModel(null);
         journalTaskList.setSelectionModel(null);
 
-        twig.dbxClient().addListener((observable, oldValue, newValue) -> updateDbxButtonState());
-        updateDbxButtonState();
+        twig.dbxClient().addListener((observable, oldValue, newValue) -> updateDbxAccountState());
+        updateDbxAccountState();
 
         settingsSheet.getItems().addAll(
                 new LabelItem(twig.dbxName(), "DropBox Account", "DropBox", ""),
@@ -969,12 +973,16 @@ public class TaskTwigController {
         });
     }
 
-    private void updateDbxButtonState() {
+    private void updateDbxAccountState() {
         if (twig.dbxClient().getValue() == null) {
             dbxButtonState.text().set("Connect Account");
+            syncButton.setDisable(true);
+            syncLabel.setText("No Dropbox account connected");
         }
         else {
             dbxButtonState.text().set("Logout");
+            syncButton.setDisable(false);
+            syncLabel.setText("Not yet synced");
         }
     }
 
@@ -1031,6 +1039,22 @@ public class TaskTwigController {
                 if (buttonType == ButtonType.YES) {
                     twig.dbxLogout();
                 }
+            });
+        }
+    }
+
+    @FXML
+    protected void onSyncButton() {
+        if (twig.dbxClient().getValue() != null) {
+            syncLabel.setText("Syncing");
+
+            Platform.runLater(() -> {
+                var thread = new Thread(() -> {
+                    twig.dbxSync();
+                    Platform.runLater(() -> syncLabel.setText("Last synced " + LocalTime.now().format(timeFormat)));
+                });
+                thread.setDaemon(true);
+                thread.start();
             });
         }
     }

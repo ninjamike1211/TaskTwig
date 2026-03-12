@@ -4,9 +4,7 @@ import com.dropbox.core.*;
 import com.dropbox.core.json.JsonReader;
 import com.dropbox.core.oauth.DbxCredential;
 import com.dropbox.core.v2.DbxClientV2;
-import com.dropbox.core.v2.files.ListFolderResult;
-import com.dropbox.core.v2.files.Metadata;
-import com.dropbox.core.v2.files.WriteMode;
+import com.dropbox.core.v2.files.*;
 import javafx.beans.property.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -21,6 +19,8 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.*;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -42,6 +42,14 @@ public class TaskTwig implements Serializable {
     }
     public record TwigJsonNode(JsonNode node, int version) {}
 
+    private static final File[] DATA_FILES = {
+            new File("data/sleep.json"),
+            new File("data/workout.json"),
+            new File("data/task.json"),
+            new File("data/list.json"),
+            new File("data/routine.json"),
+            new File("data/journal.json")
+    };
     public static final String DBX_API_KEY = "ul8ujplgavm586q";
     public static final File dbxCredFile = new File("data/dbx/credential.app");
 
@@ -619,6 +627,62 @@ public class TaskTwig implements Serializable {
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
+        }
+    }
+
+    public void dbxSync() {
+        List<File> filesToSync = compareHashes();
+        System.out.println(filesToSync);
+
+        for (File file : filesToSync) {
+            try (InputStream fileStream = new FileInputStream(file)) {
+                dbxClient.get().files().uploadBuilder("/" + file.getName()).withMode(WriteMode.OVERWRITE).uploadAndFinish(fileStream);
+            }
+            catch (IOException | DbxException e) {
+                System.out.println("Error uploading file " + file.getName() + ": " + e.getMessage());
+            }
+        }
+    }
+
+    private List<File> compareHashes() {
+        ArrayList<File> outdatedFiles = new ArrayList<>();
+        for (File file : DATA_FILES) {
+            byte[] localHash, remoteHash;
+            try {
+                localHash = genDbxHash(file);
+            } catch (IOException e) {
+                continue;
+            }
+
+            try {
+                var metadata = dbxClient.get().files().getMetadata("/" + file.getName());
+                remoteHash = HexFormat.of().parseHex(((FileMetadata) metadata).getContentHash());
+
+                if (!Arrays.equals(localHash, remoteHash)) {
+                    outdatedFiles.add(file);
+                }
+            } catch (DbxException e) {
+                outdatedFiles.add(file);
+            }
+        }
+
+        return outdatedFiles;
+    }
+
+    private byte[] genDbxHash(File file) throws IOException {
+        try (var fileReader = new FileInputStream(file)) {
+            var chunkHasher = MessageDigest.getInstance("SHA-256");
+            var overallHasher = MessageDigest.getInstance("SHA-256");
+            byte[] chunk = new byte[4194304];
+            while(fileReader.available() > 0) {
+                int read = fileReader.readNBytes(chunk, 0, chunk.length);
+                chunkHasher.update(chunk, 0, read);
+                overallHasher.update(chunkHasher.digest());
+            }
+            return overallHasher.digest();
+        }
+        catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
         }
     }
 

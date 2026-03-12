@@ -16,292 +16,307 @@
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TitledPane?>
+<?import javafx.scene.control.ToolBar?>
 <?import javafx.scene.control.TreeView?>
 <?import javafx.scene.effect.InnerShadow?>
 <?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.paint.Color?>
 <?import javafx.scene.text.Font?>
 <?import org.controlsfx.control.PropertySheet?>
 
-<TabPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="651.0" prefWidth="882.0" rotateGraphic="true" stylesheets="@dark-theme.css" tabClosingPolicy="UNAVAILABLE" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ninjamica.tasktwig.ui.TaskTwigController">
-  <tabs>
-      <Tab text="Today">
-        <content>
-          <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
-               <children>
-                  <Label layoutX="97.0" layoutY="110.0" text="Routines" AnchorPane.leftAnchor="97.0" AnchorPane.topAnchor="110.0">
-                     <font>
-                        <Font size="16.0" />
-                     </font>
-                  </Label>
-                  <Label layoutX="342.0" layoutY="110.0" text="Tasks" AnchorPane.topAnchor="110.0">
-                     <font>
-                        <Font size="16.0" />
-                     </font>
-                  </Label>
-                  <VBox alignment="TOP_CENTER" layoutX="497.0" layoutY="16.0" prefHeight="566.0" prefWidth="355.0" spacing="5.0" AnchorPane.bottomAnchor="30.0" AnchorPane.leftAnchor="497.0" AnchorPane.rightAnchor="30.0" AnchorPane.topAnchor="25.0">
+
+<BorderPane stylesheets="@dark-theme.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ninjamica.tasktwig.ui.TaskTwigController">
+   <center>
+      <TabPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="651.0" prefWidth="882.0" rotateGraphic="true" stylesheets="@dark-theme.css" tabClosingPolicy="UNAVAILABLE">
+        <tabs>
+            <Tab text="Today">
+              <content>
+                <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                      <children>
-                        <Label text="Journal">
+                        <Label layoutX="97.0" layoutY="110.0" text="Routines" AnchorPane.leftAnchor="97.0" AnchorPane.topAnchor="110.0">
                            <font>
                               <Font size="16.0" />
                            </font>
                         </Label>
-                        <TextArea fx:id="todayJournalTextArea" focusTraversable="false" prefHeight="539.0" prefWidth="349.0" promptText="Type journal here..." style="-fx-border-color: black; -fx-border-width: 0.3;" wrapText="true" VBox.vgrow="ALWAYS">
-                           <VBox.margin>
-                              <Insets />
-                           </VBox.margin>
-                           <opaqueInsets>
-                              <Insets />
-                           </opaqueInsets>
-                           <effect>
-                              <InnerShadow>
-                                 <color>
-                                    <Color opacity="0.30091187357902527" />
-                                 </color>
-                              </InnerShadow>
-                           </effect>
-                        </TextArea>
-                     </children>
-                  </VBox>
-                  <VBox alignment="CENTER" layoutX="291.0" layoutY="16.0" prefHeight="75.0" prefWidth="145.0" spacing="6.0" style="-fx-background-color: -fx-control-inner-background; -fx-border-color: black;">
-                     <children>
-                        <Label text="Exercise:">
+                        <Label layoutX="342.0" layoutY="110.0" text="Tasks" AnchorPane.topAnchor="110.0">
                            <font>
                               <Font size="16.0" />
                            </font>
                         </Label>
-                        <Button fx:id="todayExerciseButton" alignment="CENTER" mnemonicParsing="false" onAction="#onWorkoutButtonAction" text="Start" textAlignment="CENTER" />
-                     </children>
-                     <padding>
-                        <Insets top="-3.0" />
-                     </padding>
-                  </VBox>
-                  <ListView fx:id="todayRoutineListView" editable="true" fixedCellSize="32.0" focusTraversable="false" layoutX="30.0" layoutY="133.0" prefHeight="457.0" prefWidth="200.0" AnchorPane.bottomAnchor="30.0" AnchorPane.leftAnchor="30.0" AnchorPane.topAnchor="135.0">
-                     <padding>
-                        <Insets top="10.0" />
-                     </padding>
-                  </ListView>
-                  <ListView fx:id="todayTaskListView" editable="true" fixedCellSize="32.0" focusTraversable="false" layoutX="263.0" layoutY="135.0" prefHeight="457.0" prefWidth="200.0" AnchorPane.bottomAnchor="30.0" AnchorPane.leftAnchor="263.0" AnchorPane.topAnchor="135.0">
-                     <padding>
-                        <Insets top="10.0" />
-                     </padding>
-                  </ListView>
-                  <VBox alignment="CENTER" layoutX="52.0" layoutY="16.0" prefHeight="75.0" prefWidth="157.0" spacing="6.0" style="-fx-background-color: -fx-control-inner-background; -fx-border-color: black;">
-                     <children>
-                        <Label text="Sleep:">
-                           <font>
-                              <Font size="16.0" />
-                           </font>
-                        </Label>
-                        <Button fx:id="todaySleepButton" mnemonicParsing="false" onAction="#onSleepButtonAction" text="Go To Sleep" />
-                     </children>
-                     <padding>
-                        <Insets top="-3.0" />
-                     </padding>
-                  </VBox>
-               </children>
-            </AnchorPane>
-        </content>
-      </Tab>
-    <Tab closable="false" text="Sleep">
-      <content>
-        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
-               <children>
-                  <VBox fx:id="sleepVBox" prefHeight="200.0" prefWidth="100.0" spacing="10.0" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="20.0" AnchorPane.rightAnchor="20.0" AnchorPane.topAnchor="20.0">
-                     <children>
-                        <AnchorPane VBox.vgrow="NEVER">
+                        <VBox alignment="TOP_CENTER" layoutX="497.0" layoutY="16.0" prefHeight="566.0" prefWidth="355.0" spacing="5.0" AnchorPane.bottomAnchor="30.0" AnchorPane.leftAnchor="497.0" AnchorPane.rightAnchor="30.0" AnchorPane.topAnchor="25.0">
                            <children>
-                              <Button fx:id="sleepButton" layoutX="13.0" mnemonicParsing="false" onAction="#onSleepButtonAction" onMouseClicked="#onSleepButtonClick" text="Start" />
-                              <Label fx:id="sleepStatusLabel" layoutX="85.0" layoutY="4.0" text="Status: not started" />
+                              <Label text="Journal">
+                                 <font>
+                                    <Font size="16.0" />
+                                 </font>
+                              </Label>
+                              <TextArea fx:id="todayJournalTextArea" focusTraversable="false" prefHeight="539.0" prefWidth="349.0" promptText="Type journal here..." style="-fx-border-color: black; -fx-border-width: 0.3;" wrapText="true" VBox.vgrow="ALWAYS">
+                                 <VBox.margin>
+                                    <Insets />
+                                 </VBox.margin>
+                                 <opaqueInsets>
+                                    <Insets />
+                                 </opaqueInsets>
+                                 <effect>
+                                    <InnerShadow>
+                                       <color>
+                                          <Color opacity="0.30091187357902527" />
+                                       </color>
+                                    </InnerShadow>
+                                 </effect>
+                              </TextArea>
+                           </children>
+                        </VBox>
+                        <VBox alignment="CENTER" layoutX="291.0" layoutY="16.0" prefHeight="75.0" prefWidth="145.0" spacing="6.0" style="-fx-background-color: -fx-control-inner-background; -fx-border-color: black;">
+                           <children>
+                              <Label text="Exercise:">
+                                 <font>
+                                    <Font size="16.0" />
+                                 </font>
+                              </Label>
+                              <Button fx:id="todayExerciseButton" alignment="CENTER" mnemonicParsing="false" onAction="#onWorkoutButtonAction" text="Start" textAlignment="CENTER" />
+                           </children>
+                           <padding>
+                              <Insets top="-3.0" />
+                           </padding>
+                        </VBox>
+                        <ListView fx:id="todayRoutineListView" editable="true" fixedCellSize="32.0" focusTraversable="false" layoutX="30.0" layoutY="133.0" prefHeight="457.0" prefWidth="200.0" AnchorPane.bottomAnchor="30.0" AnchorPane.leftAnchor="30.0" AnchorPane.topAnchor="135.0">
+                           <padding>
+                              <Insets top="10.0" />
+                           </padding>
+                        </ListView>
+                        <ListView fx:id="todayTaskListView" editable="true" fixedCellSize="32.0" focusTraversable="false" layoutX="263.0" layoutY="135.0" prefHeight="457.0" prefWidth="200.0" AnchorPane.bottomAnchor="30.0" AnchorPane.leftAnchor="263.0" AnchorPane.topAnchor="135.0">
+                           <padding>
+                              <Insets top="10.0" />
+                           </padding>
+                        </ListView>
+                        <VBox alignment="CENTER" layoutX="52.0" layoutY="16.0" prefHeight="75.0" prefWidth="157.0" spacing="6.0" style="-fx-background-color: -fx-control-inner-background; -fx-border-color: black;">
+                           <children>
+                              <Label text="Sleep:">
+                                 <font>
+                                    <Font size="16.0" />
+                                 </font>
+                              </Label>
+                              <Button fx:id="todaySleepButton" mnemonicParsing="false" onAction="#onSleepButtonAction" text="Go To Sleep" />
+                           </children>
+                           <padding>
+                              <Insets top="-3.0" />
+                           </padding>
+                        </VBox>
+                     </children>
+                  </AnchorPane>
+              </content>
+            </Tab>
+          <Tab closable="false" text="Sleep">
+            <content>
+              <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+                     <children>
+                        <VBox fx:id="sleepVBox" prefHeight="200.0" prefWidth="100.0" spacing="10.0" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="20.0" AnchorPane.rightAnchor="20.0" AnchorPane.topAnchor="20.0">
+                           <children>
+                              <AnchorPane VBox.vgrow="NEVER">
+                                 <children>
+                                    <Button fx:id="sleepButton" layoutX="13.0" mnemonicParsing="false" onAction="#onSleepButtonAction" onMouseClicked="#onSleepButtonClick" text="Start" />
+                                    <Label fx:id="sleepStatusLabel" layoutX="85.0" layoutY="4.0" text="Status: not started" />
+                                 </children>
+                              </AnchorPane>
+                              <TableView fx:id="sleepTableView" VBox.vgrow="ALWAYS">
+                                <columns>
+                                  <TableColumn fx:id="sleepDateCol" prefWidth="158.0" sortType="DESCENDING" text="Date" />
+                                  <TableColumn fx:id="sleepStartCol" prefWidth="107.0" text="Start" />
+                                  <TableColumn fx:id="sleepEndCol" prefWidth="98.0" text="End" />
+                                  <TableColumn fx:id="sleepLengthCol" prefWidth="189.0" text="Sleep (hours)" />
+                                </columns>
+                                 <columnResizePolicy>
+                                    <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                                 </columnResizePolicy>
+                              </TableView>
+                              <HBox fx:id="sleepLenChartPane" alignment="CENTER">
+                                 <children>
+                                    <AreaChart fx:id="sleepLenChart" legendVisible="false" prefHeight="200.0" stylesheets="@areaChart.css" HBox.hgrow="ALWAYS">
+                                      <xAxis>
+                                        <CategoryAxis endMargin="10.0" startMargin="0.0" stylesheets="@areaChart.css" />
+                                      </xAxis>
+                                      <yAxis>
+                                        <NumberAxis forceZeroInRange="false" label="Sleep (hours)" lowerBound="3.0" minorTickCount="3" stylesheets="@areaChart.css" tickUnit="2.0" upperBound="11.0" />
+                                      </yAxis>
+                                    </AreaChart>
+                                    <Button mnemonicParsing="false" onAction="#showSleepTimeChart" prefHeight="52.0" text="&gt;" />
+                                 </children>
+                              </HBox>
+                              <HBox fx:id="sleepTimeChartPane" alignment="CENTER">
+                                 <children>
+                                    <Button mnemonicParsing="false" onAction="#showSleepLenChart" prefHeight="52.0" text="&lt;" />
+                                    <LineChart fx:id="sleepTimeChart" horizontalZeroLineVisible="false" legendSide="TOP" prefHeight="200.0" stylesheets="@areaChart.css" HBox.hgrow="ALWAYS">
+                                      <xAxis>
+                                        <CategoryAxis endMargin="10.0" />
+                                      </xAxis>
+                                      <yAxis>
+                                        <NumberAxis fx:id="sleepTimeNumAxis" forceZeroInRange="false" label="Time" side="LEFT" tickUnit="3.0" upperBound="15.0" />
+                                      </yAxis>
+                                    </LineChart>
+                                 </children>
+                              </HBox>
+                           </children>
+                        </VBox>
+                     </children>
+                  </AnchorPane>
+            </content>
+          </Tab>
+          <Tab closable="false" text="Exercise">
+            <content>
+              <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+                     <children>
+                        <VBox layoutX="31.0" layoutY="21.0" AnchorPane.bottomAnchor="30.0" AnchorPane.leftAnchor="30.0" AnchorPane.rightAnchor="30.0" AnchorPane.topAnchor="20.0">
+                           <children>
+                              <AnchorPane>
+                                 <children>
+                                    <Button fx:id="workoutButton" mnemonicParsing="false" onAction="#onWorkoutButtonAction" onMouseClicked="#onWorkoutButtonClick" text="Start" />
+                                    <Label fx:id="workoutStatusLabel" layoutX="70.0" layoutY="4.0" text="Status: not started" />
+                                    <Button layoutX="411.0" mnemonicParsing="false" onAction="#addExerciseButtonClick" text="Edit Exercises" AnchorPane.rightAnchor="0.0" />
+                                 </children>
+                                 <padding>
+                                    <Insets bottom="15.0" />
+                                 </padding>
+                              </AnchorPane>
+                              <TableView fx:id="workoutTableView" prefHeight="277.0" prefWidth="522.0" VBox.vgrow="ALWAYS">
+                                 <columns>
+                                    <TableColumn fx:id="workoutDateCol" prefWidth="105.0" text="Date" />
+                                    <TableColumn fx:id="workoutLengthCol" prefWidth="123.0" text="Length (minutes)" />
+                                    <TableColumn fx:id="workoutExerciseCol" prefWidth="292.0" text="Exercises" />
+                                 </columns>
+                                 <columnResizePolicy>
+                                    <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                                 </columnResizePolicy>
+                              </TableView>
+                           </children>
+                        </VBox>
+                     </children>
+                  </AnchorPane>
+            </content>
+          </Tab>
+            <Tab closable="false" text="Tasks">
+               <content>
+                  <SplitPane dividerPositions="0.7" prefHeight="160.0" prefWidth="200.0">
+                     <items>
+                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="100.0">
+                           <children>
+                              <TableView fx:id="taskTableView" editable="true" prefHeight="277.0" prefWidth="522.0" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="20.0" AnchorPane.rightAnchor="20.0" AnchorPane.topAnchor="60.0">
+                                 <columns>
+                                    <TableColumn fx:id="taskDoneCol" prefWidth="24.0" resizable="false" />
+                                    <TableColumn fx:id="taskNameCol" prefWidth="208.0" text="Name" />
+                                    <TableColumn fx:id="taskDateTimeCol" maxWidth="1.7976931348623157E308" minWidth="-1.0" prefWidth="314.0" text="Due Date (Time)" />
+                                    <TableColumn fx:id="taskRepeatCol" prefWidth="274.0" text="Repeat" />
+                                 </columns>
+                                 <columnResizePolicy>
+                                    <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                                 </columnResizePolicy>
+                              </TableView>
+                              <Button mnemonicParsing="false" onAction="#onNewTaskButtonClick" text="New Task +" AnchorPane.leftAnchor="20.0" AnchorPane.topAnchor="20.0" />
+                              <ChoiceBox fx:id="taskFilterBox" prefHeight="26.0" prefWidth="181.0" AnchorPane.rightAnchor="20.0" AnchorPane.topAnchor="20.0" />
+                              <Label alignment="CENTER" layoutX="286.0" layoutY="23.0" text="Tasks" textAlignment="CENTER">
+                                 <font>
+                                    <Font name="System Bold" size="15.0" />
+                                 </font>
+                              </Label>
                            </children>
                         </AnchorPane>
-                        <TableView fx:id="sleepTableView" VBox.vgrow="ALWAYS">
+                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="100.0">
+                           <children>
+                              <TreeView fx:id="listTree" prefHeight="200.0" prefWidth="200.0" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="20.0" AnchorPane.rightAnchor="20.0" AnchorPane.topAnchor="50.0" />
+                              <Label alignment="CENTER" layoutX="115.0" layoutY="4.0" text="Lists" textAlignment="CENTER" AnchorPane.topAnchor="15.0">
+                                 <font>
+                                    <Font name="System Bold" size="15.0" />
+                                 </font>
+                              </Label>
+                           </children>
+                        </AnchorPane>
+                     </items>
+                  </SplitPane>
+               </content>
+            </Tab>
+            <Tab text="Routines">
+              <content>
+                <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+                     <children>
+                        <TableView fx:id="routineTable" layoutX="119.0" layoutY="80.0" prefHeight="428.0" prefWidth="616.0" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="20.0" AnchorPane.rightAnchor="20.0" AnchorPane.topAnchor="80.0">
                           <columns>
-                            <TableColumn fx:id="sleepDateCol" prefWidth="158.0" sortType="DESCENDING" text="Date" />
-                            <TableColumn fx:id="sleepStartCol" prefWidth="107.0" text="Start" />
-                            <TableColumn fx:id="sleepEndCol" prefWidth="98.0" text="End" />
-                            <TableColumn fx:id="sleepLengthCol" prefWidth="189.0" text="Sleep (hours)" />
+                            <TableColumn fx:id="routineNameCol" editable="false" prefWidth="203.0" sortable="false" text="Name" />
+                            <TableColumn fx:id="routineIntervalCol" editable="false" prefWidth="201.0" sortable="false" text="Interval" />
+                              <TableColumn fx:id="routineStartCol" editable="false" prefWidth="108.0" sortable="false" text="Time Start" />
+                              <TableColumn fx:id="routineEndCol" editable="false" prefWidth="102.0" sortable="false" text="Time Finish" />
                           </columns>
                            <columnResizePolicy>
                               <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
                            </columnResizePolicy>
                         </TableView>
-                        <HBox fx:id="sleepLenChartPane" alignment="CENTER">
-                           <children>
-                              <AreaChart fx:id="sleepLenChart" legendVisible="false" prefHeight="200.0" stylesheets="@areaChart.css" HBox.hgrow="ALWAYS">
-                                <xAxis>
-                                  <CategoryAxis endMargin="10.0" startMargin="0.0" stylesheets="@areaChart.css" />
-                                </xAxis>
-                                <yAxis>
-                                  <NumberAxis forceZeroInRange="false" label="Sleep (hours)" lowerBound="3.0" minorTickCount="3" stylesheets="@areaChart.css" tickUnit="2.0" upperBound="11.0" />
-                                </yAxis>
-                              </AreaChart>
-                              <Button mnemonicParsing="false" onAction="#showSleepTimeChart" prefHeight="52.0" text="&gt;" />
-                           </children>
-                        </HBox>
-                        <HBox fx:id="sleepTimeChartPane" alignment="CENTER">
-                           <children>
-                              <Button mnemonicParsing="false" onAction="#showSleepLenChart" prefHeight="52.0" text="&lt;" />
-                              <LineChart fx:id="sleepTimeChart" horizontalZeroLineVisible="false" legendSide="TOP" prefHeight="200.0" stylesheets="@areaChart.css" HBox.hgrow="ALWAYS">
-                                <xAxis>
-                                  <CategoryAxis endMargin="10.0" />
-                                </xAxis>
-                                <yAxis>
-                                  <NumberAxis fx:id="sleepTimeNumAxis" forceZeroInRange="false" label="Time" side="LEFT" tickUnit="3.0" upperBound="15.0" />
-                                </yAxis>
-                              </LineChart>
-                           </children>
-                        </HBox>
-                     </children>
-                  </VBox>
-               </children>
-            </AnchorPane>
-      </content>
-    </Tab>
-    <Tab closable="false" text="Exercise">
-      <content>
-        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
-               <children>
-                  <VBox layoutX="31.0" layoutY="21.0" AnchorPane.bottomAnchor="30.0" AnchorPane.leftAnchor="30.0" AnchorPane.rightAnchor="30.0" AnchorPane.topAnchor="20.0">
-                     <children>
-                        <AnchorPane>
-                           <children>
-                              <Button fx:id="workoutButton" mnemonicParsing="false" onAction="#onWorkoutButtonAction" onMouseClicked="#onWorkoutButtonClick" text="Start" />
-                              <Label fx:id="workoutStatusLabel" layoutX="70.0" layoutY="4.0" text="Status: not started" />
-                              <Button layoutX="411.0" mnemonicParsing="false" onAction="#addExerciseButtonClick" text="Edit Exercises" AnchorPane.rightAnchor="0.0" />
-                           </children>
-                           <padding>
-                              <Insets bottom="15.0" />
-                           </padding>
-                        </AnchorPane>
-                        <TableView fx:id="workoutTableView" prefHeight="277.0" prefWidth="522.0" VBox.vgrow="ALWAYS">
-                           <columns>
-                              <TableColumn fx:id="workoutDateCol" prefWidth="105.0" text="Date" />
-                              <TableColumn fx:id="workoutLengthCol" prefWidth="123.0" text="Length (minutes)" />
-                              <TableColumn fx:id="workoutExerciseCol" prefWidth="292.0" text="Exercises" />
-                           </columns>
-                           <columnResizePolicy>
-                              <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
-                           </columnResizePolicy>
-                        </TableView>
-                     </children>
-                  </VBox>
-               </children>
-            </AnchorPane>
-      </content>
-    </Tab>
-      <Tab closable="false" text="Tasks">
-         <content>
-            <SplitPane dividerPositions="0.7" prefHeight="160.0" prefWidth="200.0">
-               <items>
-                  <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="100.0">
-                     <children>
-                        <TableView fx:id="taskTableView" editable="true" prefHeight="277.0" prefWidth="522.0" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="20.0" AnchorPane.rightAnchor="20.0" AnchorPane.topAnchor="60.0">
-                           <columns>
-                              <TableColumn fx:id="taskDoneCol" prefWidth="24.0" resizable="false" />
-                              <TableColumn fx:id="taskNameCol" prefWidth="208.0" text="Name" />
-                              <TableColumn fx:id="taskDateTimeCol" maxWidth="1.7976931348623157E308" minWidth="-1.0" prefWidth="314.0" text="Due Date (Time)" />
-                              <TableColumn fx:id="taskRepeatCol" prefWidth="274.0" text="Repeat" />
-                           </columns>
-                           <columnResizePolicy>
-                              <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
-                           </columnResizePolicy>
-                        </TableView>
-                        <Button mnemonicParsing="false" onAction="#onNewTaskButtonClick" text="New Task +" AnchorPane.leftAnchor="20.0" AnchorPane.topAnchor="20.0" />
-                        <ChoiceBox fx:id="taskFilterBox" prefHeight="26.0" prefWidth="181.0" AnchorPane.rightAnchor="20.0" AnchorPane.topAnchor="20.0" />
-                        <Label alignment="CENTER" layoutX="286.0" layoutY="23.0" text="Tasks" textAlignment="CENTER">
-                           <font>
-                              <Font name="System Bold" size="15.0" />
-                           </font>
-                        </Label>
+                        <Button fx:id="routineButton" layoutX="20.0" layoutY="35.0" mnemonicParsing="false" onAction="#createRoutine" text="New Routine" AnchorPane.leftAnchor="20.0" AnchorPane.topAnchor="35.0" />
                      </children>
                   </AnchorPane>
-                  <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="100.0">
+              </content>
+            </Tab>
+            <Tab text="Journal">
+              <content>
+                <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                      <children>
-                        <TreeView fx:id="listTree" prefHeight="200.0" prefWidth="200.0" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="20.0" AnchorPane.rightAnchor="20.0" AnchorPane.topAnchor="50.0" />
-                        <Label alignment="CENTER" layoutX="115.0" layoutY="4.0" text="Lists" textAlignment="CENTER" AnchorPane.topAnchor="15.0">
-                           <font>
-                              <Font name="System Bold" size="15.0" />
-                           </font>
-                        </Label>
+                        <TextArea fx:id="journalTextArea" layoutX="484.0" layoutY="57.0" prefHeight="560.0" prefWidth="581.0" promptText="Select a date on the left to see journal" wrapText="true" AnchorPane.bottomAnchor="30.0" AnchorPane.leftAnchor="250.0" AnchorPane.rightAnchor="200.0" AnchorPane.topAnchor="30.0">
+                           <effect>
+                              <InnerShadow>
+                                 <color>
+                                    <Color opacity="0.304711252450943" />
+                                 </color>
+                              </InnerShadow>
+                           </effect>
+                        </TextArea>
+                        <ListView fx:id="journalListView" layoutX="80.0" layoutY="123.0" prefHeight="361.0" prefWidth="200.0" AnchorPane.bottomAnchor="30.0" AnchorPane.leftAnchor="30.0" AnchorPane.topAnchor="30.0" />
+                        <VBox alignment="TOP_CENTER" layoutX="466.0" layoutY="38.0" prefHeight="562.0" prefWidth="162.0" spacing="10.0" AnchorPane.bottomAnchor="30.0" AnchorPane.rightAnchor="20.0" AnchorPane.topAnchor="30.0">
+                           <children>
+                            <TitledPane text="Completed Routines" VBox.vgrow="SOMETIMES">
+                                 <content>
+                                    <AnchorPane style="-fx-padding: 0;">
+                                       <children>
+                                          <ListView fx:id="journalRoutineList" focusTraversable="false" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />
+                                       </children>
+                                    </AnchorPane>
+                                 </content>
+                                 <font>
+                                    <Font name="System Bold" size="13.0" />
+                                 </font>
+                            </TitledPane>
+                            <TitledPane text="Completed Tasks" VBox.vgrow="SOMETIMES">
+                                 <content>
+                                    <AnchorPane style="-fx-padding: 0;">
+                                       <children>
+                                          <ListView fx:id="journalTaskList" focusTraversable="false" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />
+                                       </children>
+                                    </AnchorPane>
+                                 </content>
+                                 <font>
+                                    <Font name="System Bold" size="13.0" />
+                                 </font>
+                            </TitledPane>
+                           </children>
+                        </VBox>
                      </children>
                   </AnchorPane>
-               </items>
-            </SplitPane>
-         </content>
-      </Tab>
-      <Tab text="Routines">
-        <content>
-          <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
-               <children>
-                  <TableView fx:id="routineTable" layoutX="119.0" layoutY="80.0" prefHeight="428.0" prefWidth="616.0" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="20.0" AnchorPane.rightAnchor="20.0" AnchorPane.topAnchor="80.0">
-                    <columns>
-                      <TableColumn fx:id="routineNameCol" editable="false" prefWidth="203.0" sortable="false" text="Name" />
-                      <TableColumn fx:id="routineIntervalCol" editable="false" prefWidth="201.0" sortable="false" text="Interval" />
-                        <TableColumn fx:id="routineStartCol" editable="false" prefWidth="108.0" sortable="false" text="Time Start" />
-                        <TableColumn fx:id="routineEndCol" editable="false" prefWidth="102.0" sortable="false" text="Time Finish" />
-                    </columns>
-                     <columnResizePolicy>
-                        <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
-                     </columnResizePolicy>
-                  </TableView>
-                  <Button fx:id="routineButton" layoutX="20.0" layoutY="35.0" mnemonicParsing="false" onAction="#createRoutine" text="New Routine" AnchorPane.leftAnchor="20.0" AnchorPane.topAnchor="35.0" />
-               </children>
-            </AnchorPane>
-        </content>
-      </Tab>
-      <Tab text="Journal">
-        <content>
-          <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
-               <children>
-                  <TextArea fx:id="journalTextArea" layoutX="484.0" layoutY="57.0" prefHeight="560.0" prefWidth="581.0" promptText="Select a date on the left to see journal" wrapText="true" AnchorPane.bottomAnchor="30.0" AnchorPane.leftAnchor="250.0" AnchorPane.rightAnchor="200.0" AnchorPane.topAnchor="30.0">
-                     <effect>
-                        <InnerShadow>
-                           <color>
-                              <Color opacity="0.304711252450943" />
-                           </color>
-                        </InnerShadow>
-                     </effect>
-                  </TextArea>
-                  <ListView fx:id="journalListView" layoutX="80.0" layoutY="123.0" prefHeight="361.0" prefWidth="200.0" AnchorPane.bottomAnchor="30.0" AnchorPane.leftAnchor="30.0" AnchorPane.topAnchor="30.0" />
-                  <VBox alignment="TOP_CENTER" layoutX="466.0" layoutY="38.0" prefHeight="562.0" prefWidth="162.0" spacing="10.0" AnchorPane.bottomAnchor="30.0" AnchorPane.rightAnchor="20.0" AnchorPane.topAnchor="30.0">
-                     <children>
-                      <TitledPane text="Completed Routines" VBox.vgrow="SOMETIMES">
-                           <content>
-                              <AnchorPane style="-fx-padding: 0;">
-                                 <children>
-                                    <ListView fx:id="journalRoutineList" focusTraversable="false" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />
-                                 </children>
-                              </AnchorPane>
-                           </content>
-                           <font>
-                              <Font name="System Bold" size="13.0" />
-                           </font>
-                      </TitledPane>
-                      <TitledPane text="Completed Tasks" VBox.vgrow="SOMETIMES">
-                           <content>
-                              <AnchorPane style="-fx-padding: 0;">
-                                 <children>
-                                    <ListView fx:id="journalTaskList" focusTraversable="false" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />
-                                 </children>
-                              </AnchorPane>
-                           </content>
-                           <font>
-                              <Font name="System Bold" size="13.0" />
-                           </font>
-                      </TitledPane>
-                     </children>
-                  </VBox>
-               </children>
-            </AnchorPane>
-        </content>
-      </Tab>
-      <Tab text="Settings">
-        <content>
-            <PropertySheet fx:id="settingsSheet" prefHeight="364.0" prefWidth="530.0" />
-        </content>
-      </Tab>
-  </tabs>
-</TabPane>
+              </content>
+            </Tab>
+            <Tab text="Settings">
+               <content>
+                  <PropertySheet fx:id="settingsSheet" />
+               </content>
+            </Tab>
+        </tabs>
+      </TabPane>
+   </center>
+   <bottom>
+      <ToolBar prefWidth="200.0" BorderPane.alignment="CENTER">
+        <items>
+            <Button fx:id="syncButton" mnemonicParsing="false" onAction="#onSyncButton" text="Sync" />
+            <Label fx:id="syncLabel" text="Label" />
+        </items>
+      </ToolBar>
+   </bottom>
+</BorderPane>
