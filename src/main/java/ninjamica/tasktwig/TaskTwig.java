@@ -690,6 +690,10 @@ public class TaskTwig implements Serializable {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+
+        if (!COMMIT_FILE.exists()) {
+            dbxSync(new CommitDiff(FileAction.DOWNLOAD, Arrays.asList(DataFile.values())));
+        }
     }
 
     public boolean authDbxFromFile() {
@@ -732,7 +736,10 @@ public class TaskTwig implements Serializable {
     public FileAction dbxSync() {
         CommitDiff commitDiff = compareCommitToDbx();
         System.out.println("commitDiff: " + commitDiff);
+        return dbxSync(commitDiff);
+    }
 
+    private FileAction dbxSync(CommitDiff commitDiff) {
         switch(commitDiff.action) {
             case UPLOAD -> {
                 for (DataFile dataFile : commitDiff.files) {
