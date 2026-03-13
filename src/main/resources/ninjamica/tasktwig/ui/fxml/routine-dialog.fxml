@@ -1,13 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
-<?import javafx.scene.text.*?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.ChoiceBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Spinner?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.ToggleButton?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
 <AnchorPane stylesheets="@dark-theme.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1">
    <children>
-      <VBox fx:id="contentVbox" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="233.0" prefWidth="331.0" spacing="15.0">
+      <VBox fx:id="contentVbox" maxHeight="192.0" prefHeight="192.0" spacing="15.0">
          <children>
             <AnchorPane>
                <children>
@@ -61,26 +67,15 @@
                   </ToggleButton>
                </children>
             </AnchorPane>
-            <AnchorPane>
-               <children>
-                  <Spinner fx:id="startTimeSpinner" disable="true" layoutX="159.0" prefHeight="26.0" prefWidth="122.0" />
-                  <CheckBox fx:id="startTimeCheckbox" layoutX="92.0" layoutY="5.0" mnemonicParsing="false" selected="true" text="no time">
-                     <font>
-                        <Font size="11.0" />
-                     </font>
-                  </CheckBox>
-                  <Label layoutY="4.0" text="Start Time" />
-               </children>
-            </AnchorPane>
             <AnchorPane layoutX="35.0" layoutY="156.0">
                <children>
-                  <Spinner fx:id="endTimeSpinner" disable="true" layoutX="159.0" prefHeight="26.0" prefWidth="122.0" />
-                  <CheckBox fx:id="endTimeCheckbox" layoutX="92.0" layoutY="5.0" mnemonicParsing="false" selected="true" text="no time">
+                  <Spinner fx:id="dueTimeSpinner" disable="true" layoutX="159.0" prefHeight="26.0" prefWidth="122.0" />
+                  <CheckBox fx:id="dueTimeCheckbox" layoutX="92.0" layoutY="5.0" mnemonicParsing="false" selected="true" text="no time">
                      <font>
                         <Font size="11.0" />
                      </font>
                   </CheckBox>
-                  <Label layoutY="4.0" text="End Time" />
+                  <Label layoutY="4.0" text="Due Time" />
                </children>
             </AnchorPane>
          </children>

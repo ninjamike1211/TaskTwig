@@ -38,13 +38,9 @@ public class RoutineContent extends AnchorPane {
     @FXML
     private ToggleButton daySuButton;
     @FXML
-    private CheckBox startTimeCheckbox;
+    private CheckBox dueTimeCheckbox;
     @FXML
-    private Spinner<LocalTime> startTimeSpinner;
-    @FXML
-    private CheckBox endTimeCheckbox;
-    @FXML
-    private Spinner<LocalTime> endTimeSpinner;
+    private Spinner<LocalTime> dueTimeSpinner;
 
     private final static ObservableList<String> types = FXCollections.observableArrayList("Daily", "Weekly");
 
@@ -77,49 +73,28 @@ public class RoutineContent extends AnchorPane {
                 default -> {}
             }
 
-            startTimeSpinner.disableProperty().bindBidirectional(startTimeCheckbox.selectedProperty());
-            endTimeSpinner.disableProperty().bindBidirectional(endTimeCheckbox.selectedProperty());
+            dueTimeSpinner.disableProperty().bindBidirectional(dueTimeCheckbox.selectedProperty());
 
 
-            if (routine.getStart() == null) {
-                startTimeCheckbox.setSelected(true);
-                new TimeSpinner(startTimeSpinner);
+            if (routine.getDueTime() == null) {
+                dueTimeCheckbox.setSelected(true);
+                new TimeSpinner(dueTimeSpinner);
             }
             else {
-                startTimeCheckbox.setSelected(false);
-                new TimeSpinner(startTimeSpinner, routine.getStart());
+                dueTimeCheckbox.setSelected(false);
+                new TimeSpinner(dueTimeSpinner, routine.getDueTime());
             }
 
-            if (routine.getEnd() == null) {
-                endTimeCheckbox.setSelected(true);
-                new TimeSpinner(endTimeSpinner);
-            }
-            else {
-                endTimeCheckbox.setSelected(false);
-                new TimeSpinner(endTimeSpinner, routine.getEnd());
-            }
-
-            startTimeCheckbox.selectedProperty().addListener((observable, oldValue, newValue) -> {
+            dueTimeCheckbox.selectedProperty().addListener((observable, oldValue, newValue) -> {
                if (newValue) {
-                   routine.startTime().set(null);
+                   routine.dueTime().set(null);
                }
                else {
-                   routine.startTime().set(startTimeSpinner.getValue());
+                   routine.dueTime().set(dueTimeSpinner.getValue());
                }
             });
-            startTimeSpinner.valueProperty().addListener(
-                    (observable, oldValue, newValue) -> routine.startTime().set(newValue));
-
-            endTimeCheckbox.selectedProperty().addListener((observable, oldValue, newValue) -> {
-               if (newValue) {
-                   routine.endTime().set(null);
-               }
-               else {
-                   routine.endTime().set(endTimeSpinner.getValue());
-               }
-            });
-            endTimeSpinner.valueProperty().addListener(
-                    (observable, oldValue, newValue) -> routine.endTime().set(newValue));
+            dueTimeSpinner.valueProperty().addListener(
+                    (observable, oldValue, newValue) -> routine.dueTime().set(newValue));
 
         }
         catch (IOException e) {

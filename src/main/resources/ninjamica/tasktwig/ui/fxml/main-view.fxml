@@ -245,8 +245,7 @@
                           <columns>
                             <TableColumn fx:id="routineNameCol" editable="false" prefWidth="203.0" sortable="false" text="Name" />
                             <TableColumn fx:id="routineIntervalCol" editable="false" prefWidth="201.0" sortable="false" text="Interval" />
-                              <TableColumn fx:id="routineStartCol" editable="false" prefWidth="108.0" sortable="false" text="Time Start" />
-                              <TableColumn fx:id="routineEndCol" editable="false" prefWidth="102.0" sortable="false" text="Time Finish" />
+                              <TableColumn fx:id="routineDueCol" editable="false" prefWidth="102.0" sortable="false" text="Due Time" />
                           </columns>
                            <columnResizePolicy>
                               <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />

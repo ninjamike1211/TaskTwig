@@ -16,44 +16,49 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-@JsonIncludeProperties({"name", "start", "end", "interval", "lastDone"})
-public record Routine(StringProperty name, ObjectProperty<LocalTime> startTime, ObjectProperty<LocalTime> endTime, ObjectProperty<TwigInterval> interval, ObjectProperty<LocalDate> lastDone) {
+@JsonIncludeProperties({"name", "dueAt", "interval", "lastDone"})
+public record Routine(StringProperty name, ObjectProperty<LocalTime> dueTime, ObjectProperty<TwigInterval> interval, ObjectProperty<LocalDate> lastDone) {
     public static final int VERSION = 1;
 
     @JsonCreator
     public Routine(
         @JsonProperty("name") String name,
-        @JsonProperty("start") LocalTime startTime,
-        @JsonProperty("end") LocalTime endTime,
+        @JsonProperty("dueAt") LocalTime dueTime,
         @JsonProperty("interval") TwigInterval interval,
         @JsonProperty("lastDone") LocalDate lastDone)
     {
         this(new SimpleStringProperty(name),
-                new SimpleObjectProperty<>(startTime),
-                new SimpleObjectProperty<>(endTime),
+                new SimpleObjectProperty<>(dueTime),
                 new SimpleObjectProperty<>(interval),
                 new SimpleObjectProperty<>(lastDone));
     }
 
-    public Routine(String name, LocalTime startTime, LocalTime endTime, TwigInterval interval) {
-        this(name, startTime, endTime, interval, null);
+    public Routine(String name, LocalTime dueTime, TwigInterval interval) {
+        this(name, dueTime, interval, null);
     }
 
     public Routine(TaskTwig.TwigJsonNode twigNode) {
         JsonNode node = twigNode.node();
         String name;
-        LocalTime start, end;
+        LocalTime dueTime;
         TwigInterval interval;
         LocalDate lastDone;
-
-        if (twigNode.version() == 1) {
+        if (twigNode.version() == 2) {
             name = node.get("name").asString();
 
-            JsonNode startNode = node.get("start");
-            start = startNode.isNull() ? null : LocalTime.parse(startNode.asString());
+            JsonNode endNode = node.get("dueAt");
+            dueTime = endNode.isNull() ? null : LocalTime.parse(endNode.asString());
+
+            interval = TwigInterval.parseFromJson(node.get("interval"));
+
+            JsonNode lastDoneNode = node.get("lastDone");
+            lastDone = lastDoneNode.isNull() ? null : LocalDate.parse(lastDoneNode.asString());
+        }
+        else if (twigNode.version() == 1) {
+            name = node.get("name").asString();
 
             JsonNode endNode = node.get("end");
-            end = endNode.isNull() ? null : LocalTime.parse(endNode.asString());
+            dueTime = endNode.isNull() ? null : LocalTime.parse(endNode.asString());
 
             interval = TwigInterval.parseFromJson(node.get("interval"));
 
@@ -64,7 +69,7 @@ public record Routine(StringProperty name, ObjectProperty<LocalTime> startTime, 
             throw new TaskTwig.JsonVersionException("Unsupported Routine version: " + twigNode.version());
         }
 
-        this(name, start, end, interval, lastDone);
+        this(name, dueTime, interval, lastDone);
     }
 
     @JsonGetter("name")
@@ -75,20 +80,12 @@ public record Routine(StringProperty name, ObjectProperty<LocalTime> startTime, 
             return name.get();
     }
 
-    @JsonGetter("start")
-    public LocalTime getStart() {
+    @JsonGetter("dueAt")
+    public LocalTime getDueTime() {
         if (TaskTwig.useFxThread())
-            return CompletableFuture.supplyAsync(startTime::get, Platform::runLater).join();
+            return CompletableFuture.supplyAsync(dueTime::get, Platform::runLater).join();
         else
-            return startTime.get();
-    }
-
-    @JsonGetter("end")
-    public LocalTime getEnd() {
-        if (TaskTwig.useFxThread())
-            return CompletableFuture.supplyAsync(endTime::get, Platform::runLater).join();
-        else
-            return endTime.get();
+            return dueTime.get();
     }
 
     @JsonGetter("interval")

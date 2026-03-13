@@ -34,17 +34,13 @@ import ninjamica.tasktwig.ui.PropertySheetItems.LabelItem;
 import org.controlsfx.control.PopOver;
 import org.controlsfx.control.PropertySheet;
 
-import java.io.IOException;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 public class TaskTwigController {
 
@@ -85,8 +81,7 @@ public class TaskTwigController {
     @FXML private TableView<Routine> routineTable;
     @FXML private TableColumn<Routine, String> routineNameCol;
     @FXML private TableColumn<Routine, TwigInterval> routineIntervalCol;
-    @FXML private TableColumn<Routine, LocalTime> routineStartCol;
-    @FXML private TableColumn<Routine, LocalTime> routineEndCol;
+    @FXML private TableColumn<Routine, LocalTime> routineDueCol;
     @FXML private Button routineButton;
 
     @FXML private ListView<LocalDate> journalListView;
@@ -149,7 +144,7 @@ public class TaskTwigController {
                     }
                 });
 
-                this.setOnMouseClicked(event -> {checkBox.setSelected(!checkBox.isSelected());});
+                this.setOnMouseClicked(event -> checkBox.setSelected(!checkBox.isSelected()));
 
                 pane.getChildren().addAll(checkBox, name, dueText);
             }
@@ -167,8 +162,8 @@ public class TaskTwigController {
                     name.textProperty().bind(item.name());
                     checkBox.setSelected(item.isDoneToday());
 
-                    if (item.getEnd() != null) {
-                        dueText.setText("by " + item.getEnd().format(timeFormat));
+                    if (item.getDueTime() != null) {
+                        dueText.setText("by " + item.getDueTime().format(timeFormat));
                     }
                     else {
                         dueText.setText(null);
@@ -182,16 +177,23 @@ public class TaskTwigController {
         todayRoutineListView.setSelectionModel(null);
         todayRoutineListView.setItems(twig.routineList().filtered(item -> item.getInterval().isToday()));
 
-        todayTaskListView.setCellFactory(col -> new ListCell<Task>() {
+        todayTaskListView.setCellFactory(col -> new ListCell<>() {
             private final CheckBox checkBox = new CheckBox();
             private final Text name = new Text();
             private final Text dueText = new Text();
             private final HBox pane = new HBox(7);
+
             {
                 name.setStyle("-fx-fill: lightgray");
                 dueText.setStyle("-fx-fill: #a1a1a1");
-                this.setOnMouseEntered(event -> {name.setUnderline(true); dueText.setUnderline(true);});
-                this.setOnMouseExited(event -> {name.setUnderline(false); dueText.setUnderline(false);});
+                this.setOnMouseEntered(event -> {
+                    name.setUnderline(true);
+                    dueText.setUnderline(true);
+                });
+                this.setOnMouseExited(event -> {
+                    name.setUnderline(false);
+                    dueText.setUnderline(false);
+                });
 //                this.setCursor(Cursor.HAND);
 
                 checkBox.selectedProperty().addListener((observable, oldValue, newValue) -> {
@@ -282,10 +284,10 @@ public class TaskTwigController {
         sleepTableView.setItems(FXCollections.observableArrayList(twig.sleepRecords().values()).sorted((sleep1, sleep2) -> sleep2.end().compareTo(sleep1.end())));
 
         // sleepTableView.getSortOrder().add(sleepDateCol);
-        sleepTimeNumAxis.setTickLabelFormatter(new StringConverter<Number>() {
+        sleepTimeNumAxis.setTickLabelFormatter(new StringConverter<>() {
             @Override
             public String toString(Number num) {
-                LocalTime time = LocalTime.of(12,0).minusMinutes((long)(num.floatValue() * 60));
+                LocalTime time = LocalTime.of(12, 0).minusMinutes((long) (num.floatValue() * 60));
                 return time.format(timeFormat);
             }
 
@@ -434,9 +436,7 @@ public class TaskTwigController {
                                 TextInputDialog dialog = new TextInputDialog();
                                 dialog.setTitle("Add item to " + list.getName());
                                 dialog.setHeaderText("Add item to " + list.getName());
-                                dialog.showAndWait().ifPresent(result -> {
-                                    list.items().add(new TwigListItem(result));
-                                });
+                                dialog.showAndWait().ifPresent(result -> list.items().add(new TwigListItem(result)));
                             });
                             contextMenu.getItems().addAll(deleteItem, addItem);
                         }
@@ -570,29 +570,23 @@ public class TaskTwigController {
         });
         routineNameCol.setCellValueFactory(routine -> routine.getValue().name());
         routineIntervalCol.setCellValueFactory(routine -> routine.getValue().interval());
-        routineStartCol.setCellValueFactory(routine -> routine.getValue().startTime());
-        routineEndCol.setCellValueFactory(routine -> routine.getValue().endTime());
-        routineIntervalCol.setCellFactory(col -> new TableCell<Routine, TwigInterval>() {
+        routineDueCol.setCellValueFactory(routine -> routine.getValue().dueTime());
+        routineIntervalCol.setCellFactory(col -> new TableCell<>() {
             @Override
             protected void updateItem(TwigInterval item, boolean empty) {
                 super.updateItem(item, empty);
                 if (item == null || empty) {
                     setText(null);
-                }
-                else {
+                } else {
                     switch (item) {
-                        case TwigInterval.DailyInterval daily -> {
-                            setText("Daily");
-                        }
+                        case TwigInterval.DailyInterval daily -> setText("Daily");
                         case TwigInterval.WeeklyInterval week -> {
                             setWeekText(week);
                             for (BooleanProperty prop : week.dayOfWeekMapProperty()) {
                                 prop.addListener((observable, oldValue, newValue) -> setWeekText(week));
                             }
                         }
-                        default -> {
-                            setText(null);
-                        }
+                        default -> setText(null);
                     }
                 }
             }
@@ -608,8 +602,7 @@ public class TaskTwigController {
             }
         });
 
-        routineStartCol.setCellFactory(column -> new timeTableCell<>(timeFormat) {});
-        routineEndCol.setCellFactory(column -> new timeTableCell<>(timeFormat) {});
+        routineDueCol.setCellFactory(column -> new timeTableCell<>(timeFormat) {});
 
         routineTable.setItems(twig.routineList());
 
@@ -643,9 +636,9 @@ public class TaskTwigController {
             }
         });
         twig.journalMap().addListener((MapChangeListener<LocalDate, Journal>) change -> {
-            journalListView.setItems(FXCollections.observableArrayList(twig.journalMap().keySet()).sorted((date1, date2) -> date2.compareTo(date1)));
+            journalListView.setItems(FXCollections.observableArrayList(twig.journalMap().keySet()).sorted(Comparator.reverseOrder()));
         });
-        journalListView.setItems(FXCollections.observableArrayList(twig.journalMap().keySet()).sorted((date1, date2) -> date2.compareTo(date1)));
+        journalListView.setItems(FXCollections.observableArrayList(twig.journalMap().keySet()).sorted(Comparator.reverseOrder()));
         journalRoutineList.setSelectionModel(null);
         journalTaskList.setSelectionModel(null);
 
@@ -741,8 +734,6 @@ public class TaskTwigController {
     private void refillSleepTable() {
         sleepTableView.setItems(FXCollections.observableList(new ArrayList<>(twig.sleepRecords().values())).sorted((sleep1, sleep2) -> sleep2.end().compareTo(sleep1.end())));
         sleepTableView.refresh();
-//        sleepTableView.getSortOrder().clear();
-//        sleepTableView.getSortOrder().add(sleepDateCol);
     }
 
     private void refillSleepCharts() {
@@ -807,7 +798,7 @@ public class TaskTwigController {
     }
 
     @FXML
-    protected void onSleepButtonAction(ActionEvent event) throws IOException {
+    protected void onSleepButtonAction(ActionEvent event) {
         if(!twig.isSleeping()) {
             TimeDateDialog dialog = new TimeDateDialog(stage, "Bed");
             Optional<LocalDateTime> timeResult = dialog.showAndWait();
@@ -840,7 +831,7 @@ public class TaskTwigController {
     }
 
     @FXML
-    protected void onSleepButtonClick(MouseEvent event) throws IOException {
+    protected void onSleepButtonClick(MouseEvent event) {
         if(twig.isSleeping() && event.getButton() == MouseButton.SECONDARY) {
             Alert confirmDialog = createAlert(Alert.AlertType.CONFIRMATION, "Cancel Sleep Record?", "Do you want to cancel this sleep record?", "");
 
@@ -865,7 +856,7 @@ public class TaskTwigController {
     }
 
     @FXML
-    protected void onWorkoutButtonAction(ActionEvent event) throws IOException {
+    protected void onWorkoutButtonAction(ActionEvent event) {
         if(!twig.isWorkingOut()) {
             TimeDateDialog dialog = new TimeDateDialog(stage, "Workout");
             Optional<LocalDateTime> timeResult = dialog.showAndWait();
@@ -894,7 +885,7 @@ public class TaskTwigController {
     }
 
     @FXML
-    protected void onWorkoutButtonClick(MouseEvent event) throws IOException {
+    protected void onWorkoutButtonClick(MouseEvent event) {
         if(twig.isWorkingOut() && event.getButton() == MouseButton.SECONDARY) {
             Alert confirmDialog = createAlert(Alert.AlertType.CONFIRMATION, "Cancel Workout?", "Do you want to cancel this workout?", "");
 
@@ -906,14 +897,14 @@ public class TaskTwigController {
     }
 
     @FXML
-    protected void addExerciseButtonClick(ActionEvent event) throws IOException {
+    protected void addExerciseButtonClick(ActionEvent event) {
         ExerciseDialog dialog = new ExerciseDialog(stage, twig.getExerciseList());
         Optional<List<Exercise>> exerciseResult = dialog.showAndWait();
         exerciseResult.ifPresent(exerciseList -> twig.exerciseList().setAll(exerciseList));
     }
 
     @FXML
-    protected void onNewTaskButtonClick(ActionEvent event) throws IOException {
+    protected void onNewTaskButtonClick(ActionEvent event) {
         TaskDialog dialog = new TaskDialog(stage);
         Optional<TaskDialog.TaskReturn> taskResult = dialog.showAndWait();
         taskResult.ifPresent(task -> {
@@ -939,9 +930,7 @@ public class TaskTwigController {
     protected void createRoutine() {
         RoutineDialog dialog = new RoutineDialog(stage);
         Optional<Routine> routineResult = dialog.showAndWait();
-        routineResult.ifPresent(routine -> {
-            twig.routineList().add(routine);
-        });
+        routineResult.ifPresent(routine -> twig.routineList().add(routine));
     }
 
     private void updateDbxAccountState() {

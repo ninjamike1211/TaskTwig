@@ -45,13 +45,9 @@ public class RoutineDialog extends Dialog<Routine> {
     @FXML
     private ToggleButton daySuButton;
     @FXML
-    private CheckBox startTimeCheckbox;
+    private CheckBox dueTimeCheckbox;
     @FXML
-    private Spinner<LocalTime> startTimeSpinner;
-    @FXML
-    private CheckBox endTimeCheckbox;
-    @FXML
-    private Spinner<LocalTime> endTimeSpinner;
+    private Spinner<LocalTime> dueTimeSpinner;
 
     private final static ObservableList<String> types = FXCollections.observableArrayList("Daily", "Weekly");
 //    private Routine inputTask;
@@ -86,10 +82,8 @@ public class RoutineDialog extends Dialog<Routine> {
         typeChoiceBox.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> updateVbox());
         typeChoiceBox.getSelectionModel().select(0);
 
-        new TimeSpinner(startTimeSpinner);
-        startTimeSpinner.disableProperty().bindBidirectional(startTimeCheckbox.selectedProperty());
-        new TimeSpinner(endTimeSpinner);
-        endTimeSpinner.disableProperty().bindBidirectional(endTimeCheckbox.selectedProperty());
+        new TimeSpinner(dueTimeSpinner);
+        dueTimeSpinner.disableProperty().bindBidirectional(dueTimeCheckbox.selectedProperty());
 
     }
 
@@ -110,8 +104,7 @@ public class RoutineDialog extends Dialog<Routine> {
             return null;
         }
 
-        LocalTime startTime = startTimeCheckbox.isSelected() ? null : startTimeSpinner.getValue();
-        LocalTime endTime = endTimeCheckbox.isSelected() ? null : endTimeSpinner.getValue();
+        LocalTime dueTime = dueTimeCheckbox.isSelected() ? null : dueTimeSpinner.getValue();
 
         TwigInterval interval;
         switch (typeChoiceBox.getValue()) {
@@ -140,6 +133,6 @@ public class RoutineDialog extends Dialog<Routine> {
             default -> interval = null;
         }
 
-        return new Routine(nameTextField.getText(), startTime, endTime, interval);
+        return new Routine(nameTextField.getText(), dueTime, interval);
     }
 }
