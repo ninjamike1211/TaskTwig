@@ -562,6 +562,10 @@ public class TaskTwigController {
                 }
             });
 
+            MenuItem deleteItem = new MenuItem("Delete");
+            deleteItem.setOnAction(event -> table.getItems().remove(row.getIndex()));
+            row.setContextMenu(new ContextMenu(deleteItem));
+
             return row;
         });
         routineNameCol.setCellValueFactory(routine -> routine.getValue().name());
@@ -665,41 +669,8 @@ public class TaskTwigController {
 
     public void closeTwig() {
         twig.saveToFile();
+        twig.dbxSync();
     }
-
-
-//    private void updateTodaySleepButton() {
-//        if (twig.isSleeping()) {
-//            todaySleepButton.setText("Wake Up");
-//        }
-//        else {
-//            todaySleepButton.setText("Go To Sleep");
-//        }
-//    }
-
-//    @FXML
-//    protected void onTodaySleepButtonPressed(ActionEvent event) {
-//        if (twig.isSleeping()) {
-//            TimeDateDialog dialog = new TimeDateDialog(stage, "Wake Up");
-//            Optional<LocalDateTime> timeResult = dialog.showAndWait();
-//            timeResult.ifPresent(twig::finishSleep);
-//        }
-//        else {
-//            TimeDateDialog dialog = new TimeDateDialog(stage, "Bed");
-//            Optional<LocalDateTime> timeResult = dialog.showAndWait();
-//            timeResult.ifPresent(twig::startSleep);
-//        }
-//        updateTodaySleepButton();
-//    }
-
-//    private void updateTodayExerciseButton() {
-//        if (twig.isWorkingOut()) {
-//            todayExerciseButton.setText("Finish");
-//        }
-//        else {
-//            todayExerciseButton.setText("Start");
-//        }
-//    }
 
     private void populateTwigLists() {
         listTree.getRoot().getChildren().clear();
@@ -987,7 +958,7 @@ public class TaskTwigController {
     }
 
     private void dbxAuthorize() {
-        var authState = twig.genDbxAuthRequest();
+        String authUrl = twig.genDbxAuthUrl();
 
         Dialog<String> dialog = new Dialog<>() {
             {
@@ -995,8 +966,8 @@ public class TaskTwigController {
                 getDialogPane().getStyleClass().add("confirmation");
                 setHeaderText("Open the following URL and paste the provided code below");
 
-                Hyperlink url = new Hyperlink(authState.url());
-                url.setOnAction(event -> application.getHostServices().showDocument(url.getText()));
+                Hyperlink url = new Hyperlink(authUrl);
+                url.setOnAction(event -> application.getHostServices().showDocument(authUrl));
                 url.setMaxWidth(600);
                 url.setWrapText(true);
 
@@ -1022,7 +993,7 @@ public class TaskTwigController {
 
         dialog.showAndWait().ifPresent(code -> {
             try {
-                twig.authDbxFromCode(authState, code);
+                twig.authDbxFromCode(code);
             } catch (DbxException e) {
                 new Alert(Alert.AlertType.ERROR, "Error Authenticating, code not accepted. Make sure you've entered the code properly.", ButtonType.OK).showAndWait();
             }
@@ -1046,16 +1017,24 @@ public class TaskTwigController {
     @FXML
     protected void onSyncButton() {
         if (twig.dbxClient().getValue() != null) {
-            syncLabel.setText("Syncing");
+            syncLabel.setText("Saving data");
 
-            Platform.runLater(() -> {
-                var thread = new Thread(() -> {
-                    twig.dbxSync();
-                    Platform.runLater(() -> syncLabel.setText("Last synced " + LocalTime.now().format(timeFormat)));
-                });
-                thread.setDaemon(true);
-                thread.start();
+            var thread = new Thread(() -> {
+                twig.saveToFileFX();
+                Platform.runLater(() -> syncLabel.setText("Syncing"));
+
+                var result = twig.dbxSync();
+                String labelText;
+                switch (result) {
+                    case UPLOAD -> labelText = "Synced local to remote at " + LocalTime.now().format(timeFormat);
+                    case DOWNLOAD -> labelText = "Synced local from remote at " + LocalTime.now().format(timeFormat);
+                    case NONE -> labelText = "In sync as of " + LocalTime.now().format(timeFormat);
+                    default -> labelText = "";
+                }
+                Platform.runLater(() -> syncLabel.setText(labelText));
             });
+            thread.setDaemon(true);
+            thread.start();
         }
     }
 

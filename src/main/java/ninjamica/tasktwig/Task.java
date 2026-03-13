@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIncludeProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -13,6 +14,7 @@ import tools.jackson.databind.JsonNode;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @JsonIncludeProperties({"name", "interval", "lastDone", "dueTime"})
 public record Task (StringProperty name, ObjectProperty<TwigInterval> interval, ObjectProperty<LocalDate> lastDone, ObjectProperty<LocalTime> dueTime) {
@@ -61,22 +63,34 @@ public record Task (StringProperty name, ObjectProperty<TwigInterval> interval, 
 
     @JsonGetter("name")
     public String getName() {
-        return this.name.get();
+        if (TaskTwig.useFxThread())
+            return CompletableFuture.supplyAsync(name::get, Platform::runLater).join();
+        else
+            return this.name.get();
     }
 
     @JsonGetter("interval")
     public TwigInterval getInterval() {
-        return this.interval.get();
+        if (TaskTwig.useFxThread())
+            return CompletableFuture.supplyAsync(interval::get, Platform::runLater).join();
+        else
+            return this.interval.get();
     }
 
     @JsonGetter("lastDone")
     public LocalDate getLastDone() {
-        return this.lastDone.get();
+        if (TaskTwig.useFxThread())
+            return CompletableFuture.supplyAsync(lastDone::get, Platform::runLater).join();
+        else
+            return this.lastDone.get();
     }
 
     @JsonGetter("dueTime")
     public LocalTime getDueTime() {
-        return dueTime.get();
+        if (TaskTwig.useFxThread())
+            return CompletableFuture.supplyAsync(dueTime::get, Platform::runLater).join();
+        else
+            return dueTime.get();
     }
 
     public boolean isDone() {

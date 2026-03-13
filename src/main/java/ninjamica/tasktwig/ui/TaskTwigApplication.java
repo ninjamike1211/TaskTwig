@@ -32,7 +32,7 @@ public class TaskTwigApplication extends Application {
 
     @Override
     public void stop() throws Exception {
-        controller.closeTwig();
         super.stop();
+        controller.closeTwig();
     }
 }

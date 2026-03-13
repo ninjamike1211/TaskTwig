@@ -1,6 +1,7 @@
 package ninjamica.tasktwig;
 
 import com.fasterxml.jackson.annotation.*;
+import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -13,6 +14,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY)
 @JsonSubTypes({
@@ -177,13 +179,20 @@ public interface TwigInterval {
             return dayOfWeekMap[today].get();
         }
 
-        @JsonGetter("daysOfWeek")
         public boolean[]  getDayOfWeekMap() {
             boolean[] result = new boolean[7];
             for (int i = 0; i < dayOfWeekMap.length; i++) {
                 result[i] = dayOfWeekMap[i].get();
             }
             return result;
+        }
+
+        @JsonGetter("daysOfWeek")
+        public boolean[] getDayOfWeekMapJson() {
+            if (TaskTwig.useFxThread())
+                return CompletableFuture.supplyAsync(this::getDayOfWeekMap, Platform::runLater).join();
+            else
+                return getDayOfWeekMap();
         }
 
         public BooleanProperty dayOfWeekProperty(int dayIndex) {
@@ -284,9 +293,16 @@ public interface TwigInterval {
             return TaskTwig.effectiveDate().equals(this.next());
         }
 
+        public List<Integer> getDueDays() {
+            return new ArrayList<>(this.dueDays);
+        }
+
         @JsonGetter("dueDays")
-        public ObservableList<Integer> getDueDays() {
-            return dueDays;
+        public List<Integer> getDueDaysJson() {
+            if (TaskTwig.useFxThread())
+                return CompletableFuture.supplyAsync(this::getDueDays, Platform::runLater).join();
+            else
+                return this.dueDays;
         }
     }
 
@@ -338,7 +354,10 @@ public interface TwigInterval {
 
         @JsonGetter("date")
         public LocalDate date() {
-            return date.get();
+            if (TaskTwig.useFxThread())
+                return CompletableFuture.supplyAsync(date::get, Platform::runLater).join();
+            else
+                return date.get();
         }
     }
 

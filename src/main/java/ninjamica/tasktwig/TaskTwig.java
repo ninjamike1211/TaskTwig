@@ -4,7 +4,8 @@ import com.dropbox.core.*;
 import com.dropbox.core.json.JsonReader;
 import com.dropbox.core.oauth.DbxCredential;
 import com.dropbox.core.v2.DbxClientV2;
-import com.dropbox.core.v2.files.*;
+import com.dropbox.core.v2.files.FileMetadata;
+import com.dropbox.core.v2.files.WriteMode;
 import javafx.beans.property.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -15,12 +16,14 @@ import tools.jackson.core.JsonGenerator;
 import tools.jackson.core.JsonParser;
 import tools.jackson.core.JsonToken;
 import tools.jackson.core.exc.JacksonIOException;
+import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.*;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -42,20 +45,28 @@ public class TaskTwig implements Serializable {
     }
     public record TwigJsonNode(JsonNode node, int version) {}
 
-    private static final File[] DATA_FILES = {
-            new File("data/sleep.json"),
-            new File("data/workout.json"),
-            new File("data/task.json"),
-            new File("data/list.json"),
-            new File("data/routine.json"),
-            new File("data/journal.json")
-    };
-    public static final String DBX_API_KEY = "ul8ujplgavm586q";
-    public static final File dbxCredFile = new File("data/dbx/credential.app");
+    private static final File DATA_FOLDER = new File("data");
+    private enum DataFile {
+        SLEEP (new File(DATA_FOLDER.getPath()+"/sleep.json")),
+        WORKOUT (new File(DATA_FOLDER.getPath()+"/workout.json")),
+        TASK (new File(DATA_FOLDER.getPath()+"/task.json")),
+        ROUTINE (new File(DATA_FOLDER.getPath()+"/routine.json")),
+        LIST (new File(DATA_FOLDER.getPath()+"/list.json")),
+        JOURNAL (new File(DATA_FOLDER.getPath()+"/journal.json"));
+
+        public final File file;
+        DataFile(File file) {
+            this.file = file;
+        }
+    }
+    private static final File COMMIT_FILE = new File(DATA_FOLDER.getPath()+"/commit.json");
+    private static final String DBX_API_KEY = "ul8ujplgavm586q";
+    private static final File dbxCredFile = new File("data/dbx/credential.app");
 
     private static TaskTwig instance;
     private static LocalTime dayStart = LocalTime.of(5,00);
     private static LocalTime nightStart = LocalTime.of(18,00);
+    private static boolean useFXThread = false;
 
     private ObservableMap<LocalDate, Sleep> sleepRecords;
     private ObservableList<Workout> workoutRecords;
@@ -71,6 +82,7 @@ public class TaskTwig implements Serializable {
     private DbxCredential dbxCredential;
     private final ObjectProperty<DbxClientV2> dbxClient = new SimpleObjectProperty<>();
     private final StringProperty dbxName = new SimpleStringProperty("No active account");
+    private DbxPKCEWebAuth currentDbxAuthAttempt;
 
 
     public TaskTwig() {
@@ -135,6 +147,10 @@ public class TaskTwig implements Serializable {
 
     public static boolean isNight() {
         return TaskTwig.isNight(LocalTime.now());
+    }
+
+    static boolean useFxThread() {
+        return TaskTwig.useFXThread;
     }
 
     public void startSleep() {
@@ -288,15 +304,14 @@ public class TaskTwig implements Serializable {
         }
     }
 
-    public void saveToFile() {
-        File sleepJson = new File("data/sleep.json");
-        File workoutJson = new File("data/workout.json");
-        File taskJson = new File("data/task.json");
-        File listJson = new File("data/list.json");
-        File routineJson = new File("data/routine.json");
-        File journalJson = new File("data/journal.json");
+    public void saveToFileFX() {
+        TaskTwig.useFXThread = true;
+        saveToFile();
+        TaskTwig.useFXThread = false;
+    }
 
-        try (JsonGenerator generator = mapper.createGenerator(sleepJson, JsonEncoding.UTF8)) {
+    public void saveToFile() {
+        try (JsonGenerator generator = mapper.createGenerator(DataFile.SLEEP.file, JsonEncoding.UTF8)) {
             generator.writeStartObject();
 
             generator.writeNumberProperty("version", Sleep.VERSION);
@@ -305,7 +320,7 @@ public class TaskTwig implements Serializable {
             generator.writeEndObject();
         }
 
-        try (JsonGenerator generator = mapper.createGenerator(workoutJson, JsonEncoding.UTF8)) {
+        try (JsonGenerator generator = mapper.createGenerator(DataFile.WORKOUT.file, JsonEncoding.UTF8)) {
             generator.writeStartObject();
 
             generator.writeNumberProperty("version", Workout.VERSION);
@@ -316,7 +331,7 @@ public class TaskTwig implements Serializable {
             generator.writeEndObject();
         }
 
-        try (JsonGenerator generator = mapper.createGenerator(taskJson, JsonEncoding.UTF8)) {
+        try (JsonGenerator generator = mapper.createGenerator(DataFile.TASK.file, JsonEncoding.UTF8)) {
             generator.writeStartObject();
 
             generator.writeNumberProperty("version", Task.VERSION);
@@ -330,7 +345,7 @@ public class TaskTwig implements Serializable {
             generator.writeEndObject();
         }
 
-        try (JsonGenerator generator = mapper.createGenerator(listJson, JsonEncoding.UTF8)) {
+        try (JsonGenerator generator = mapper.createGenerator(DataFile.LIST.file, JsonEncoding.UTF8)) {
             generator.writeStartObject();
 
             generator.writeNumberProperty("version", TwigList.VERSION);
@@ -344,7 +359,7 @@ public class TaskTwig implements Serializable {
             generator.writeEndObject();
         }
 
-        try (JsonGenerator generator = mapper.createGenerator(routineJson, JsonEncoding.UTF8)) {
+        try (JsonGenerator generator = mapper.createGenerator(DataFile.ROUTINE.file, JsonEncoding.UTF8)) {
             generator.writeStartObject();
 
             generator.writeNumberProperty("version", Routine.VERSION);
@@ -358,7 +373,7 @@ public class TaskTwig implements Serializable {
             generator.writeEndObject();
         }
 
-        try (JsonGenerator generator = mapper.createGenerator(journalJson, JsonEncoding.UTF8)) {
+        try (JsonGenerator generator = mapper.createGenerator(DataFile.JOURNAL.file, JsonEncoding.UTF8)) {
             generator.writeStartObject();
 
             generator.writeNumberProperty("version", Journal.VERSION);
@@ -367,19 +382,34 @@ public class TaskTwig implements Serializable {
 
             generator.writeEndObject();
         }
+
+        try (JsonGenerator generator = mapper.createGenerator(COMMIT_FILE, JsonEncoding.UTF8)) {
+            var digest = MessageDigest.getInstance("SHA-256");
+            Map<DataFile, String> fileHashes = new HashMap<>();
+            for (DataFile dataFile : DataFile.values()) {
+                byte[] hash = genDbxHash(dataFile.file);
+                fileHashes.put(dataFile, Base64.getEncoder().encodeToString(hash));
+                digest.update(hash);
+            }
+            String commitHash = Base64.getEncoder().encodeToString(digest.digest());
+
+            generator.writeStartObject();
+
+            generator.writePOJOProperty("timestamp", Instant.now());
+            generator.writeStringProperty("commitHash", commitHash);
+            generator.writePOJOProperty("fileHashes", fileHashes);
+
+            generator.writeEndObject();
+
+        } catch (NoSuchAlgorithmException | IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void readFromFile() {
-        File sleepJson = new File("data/sleep.json");
-        File workoutJson = new File("data/workout.json");
-        File taskJson = new File("data/task.json");
-        File listJson = new File("data/list.json");
-        File routineJson = new File("data/routine.json");
-        File journalJson = new File("data/journal.json");
-
         // Parse sleep records
         SortedMap<LocalDate, Sleep> sleepMap = new TreeMap<>();
-        try (JsonParser parser = mapper.createParser(sleepJson)) {
+        try (JsonParser parser = mapper.createParser(DataFile.SLEEP.file)) {
             parser.nextToken();
             assertEqual(parser.nextName(), "version");
             int version = parser.nextIntValue(0);
@@ -405,7 +435,7 @@ public class TaskTwig implements Serializable {
         // Parse workout records
         this.exerciseList = FXCollections.observableArrayList();
         this.workoutRecords = FXCollections.observableArrayList();
-        try (JsonParser parser = mapper.createParser(workoutJson)) {
+        try (JsonParser parser = mapper.createParser(DataFile.WORKOUT.file)) {
             parser.nextToken();
             assertEqual(parser.nextName(), "version");
             int version = parser.nextIntValue(0);
@@ -431,7 +461,7 @@ public class TaskTwig implements Serializable {
 
         // Parse tasks
         this.taskList = FXCollections.observableArrayList();
-        try (JsonParser parser = mapper.createParser(taskJson)) {
+        try (JsonParser parser = mapper.createParser(DataFile.TASK.file)) {
             parser.nextToken();
             assertEqual(parser.nextName(), "version");
             int version =  parser.nextIntValue(0);
@@ -445,7 +475,7 @@ public class TaskTwig implements Serializable {
 
         // Parse lists
         this.twigLists = FXCollections.observableArrayList();
-        try (JsonParser parser = mapper.createParser(listJson)) {
+        try (JsonParser parser = mapper.createParser(DataFile.LIST.file)) {
             parser.nextToken();
             assertEqual(parser.nextName(), "version");
             int version =  parser.nextIntValue(0);
@@ -459,7 +489,7 @@ public class TaskTwig implements Serializable {
 
         // Parse routines
         this.routineList = FXCollections.observableArrayList();
-        try (JsonParser parser = mapper.createParser(routineJson)) {
+        try (JsonParser parser = mapper.createParser(DataFile.ROUTINE.file)) {
             parser.nextToken();
             assertEqual(parser.nextName(), "version");
             int version =  parser.nextIntValue(0);
@@ -472,7 +502,7 @@ public class TaskTwig implements Serializable {
         }
 
         // Parse journals
-        try (JsonParser parser = mapper.createParser(journalJson)) {
+        try (JsonParser parser = mapper.createParser(DataFile.JOURNAL.file)) {
             parser.nextToken();
             assertEqual(parser.nextName(), "version");
             int version =  parser.nextIntValue(0);
@@ -515,28 +545,30 @@ public class TaskTwig implements Serializable {
         }
     }
 
-    public record AuthRequestState(DbxPKCEWebAuth pkceAuth, DbxWebAuth.Request request, String url) {}
-    public AuthRequestState genDbxAuthRequest() {
+    public String genDbxAuthUrl() {
         DbxRequestConfig config = DbxRequestConfig.newBuilder("TaskTwig/alpha").build();
 
         DbxAppInfo appInfo = new DbxAppInfo(DBX_API_KEY);
-        DbxPKCEWebAuth pkceWebAuth = new DbxPKCEWebAuth(config, appInfo);
+        currentDbxAuthAttempt = new DbxPKCEWebAuth(config, appInfo);
         DbxWebAuth.Request webAuthRequest = DbxWebAuth.newRequestBuilder()
                 .withNoRedirect()
                 .withTokenAccessType(TokenAccessType.OFFLINE)
                 .build();
 
-        String authorizeUrl = pkceWebAuth.authorize(webAuthRequest);
-
-        return new AuthRequestState(pkceWebAuth, webAuthRequest, authorizeUrl);
+        return currentDbxAuthAttempt.authorize(webAuthRequest);
     }
 
-    public void authDbxFromCode(AuthRequestState webAuth, String code) throws DbxException{
-        DbxAuthFinish authFinish = webAuth.pkceAuth().finishFromCode(code);
+    public void authDbxFromCode(String code) throws DbxException{
+        if (currentDbxAuthAttempt == null) {
+            return;
+        }
+
+        DbxAuthFinish authFinish = currentDbxAuthAttempt.finishFromCode(code);
         System.out.println("authFinish scopes: " + authFinish.getScope());
 
         dbxCredential = new DbxCredential(authFinish.getAccessToken(), authFinish.getExpiresAt(), authFinish.getRefreshToken(), DBX_API_KEY);
         initDbxClient(dbxCredential);
+        currentDbxAuthAttempt = null;
 
         try {
             DbxCredential.Writer.writeToFile(dbxCredential, dbxCredFile);
@@ -577,76 +609,113 @@ public class TaskTwig implements Serializable {
         dbxClient.set(null);
     }
 
-    private void authDbxUser() throws IOException {
-
-        if (authDbxFromFile()) {
-            return;
-        }
-
-        var authState = genDbxAuthRequest();
-        System.out.println(authState.url());
-        String code = new BufferedReader(new InputStreamReader(System.in)).readLine();
-
-        try {
-            authDbxFromCode(authState, code);
-        } catch (DbxException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     private void initDbxClient(DbxCredential credential) {
         DbxRequestConfig config = DbxRequestConfig.newBuilder("TaskTwig/alpha").build();
         dbxClient.set(new DbxClientV2(config, credential));
     }
 
-    private void downloadDbxFiles(DbxClientV2 client) throws DbxException {
-        ListFolderResult result = client.files().listFolder("");
-        while (true) {
-            for (Metadata metadata : result.getEntries()) {
-                System.out.println(metadata.getPathLower());
-                try (OutputStream fileOut = new FileOutputStream("data/dbx/"+metadata.getName())) {
-                    client.files().downloadBuilder(metadata.getPathLower()).download(fileOut);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
+    public FileAction dbxSync() {
+        CommitDiff commitDiff = compareCommitFiles();
+        System.out.println("commitDiff: " + commitDiff);
+
+        switch(commitDiff.action) {
+            case UPLOAD -> {
+                for (DataFile dataFile : commitDiff.files) {
+                    try (InputStream fileStream = new FileInputStream(dataFile.file)) {
+                        dbxClient.get().files().uploadBuilder("/" + dataFile.file.getName()).withMode(WriteMode.OVERWRITE).uploadAndFinish(fileStream);
+                    }
+                    catch (IOException | DbxException e) {
+                        System.out.println("Error uploading file " + dataFile.file.getName() + ": " + e.getMessage());
+                    }
+                }
+                try (InputStream fileStream = new FileInputStream(COMMIT_FILE)) {
+                    dbxClient.get().files().uploadBuilder("/" + COMMIT_FILE.getName()).withMode(WriteMode.OVERWRITE).uploadAndFinish(fileStream);
+                }
+                catch (IOException | DbxException e) {
+                    System.out.println("Error uploading commit file: " + e.getMessage());
                 }
             }
-
-            if (!result.getHasMore()) {
-                break;
+            case DOWNLOAD -> {
+                for (DataFile dataFile : commitDiff.files) {
+                    try (OutputStream fileStream = new FileOutputStream(dataFile.file)) {
+                        dbxClient.get().files().downloadBuilder("/" + dataFile.file.getName()).download(fileStream);
+                    }
+                    catch (IOException | DbxException e) {
+                        System.out.println("Error downloading file " + dataFile.file.getName() + ": " + e.getMessage());
+                    }
+                }
+                try (OutputStream fileStream = new FileOutputStream(COMMIT_FILE)) {
+                    dbxClient.get().files().downloadBuilder("/" + COMMIT_FILE.getName()).download(fileStream);
+                } catch (IOException | DbxException e) {
+                    System.out.println("Error downloading commit file: " + e.getMessage());
+                }
             }
-
-            result = client.files().listFolderContinue(result.getCursor());
         }
+
+        return commitDiff.action;
     }
 
-    private void uploadDbxFiles(DbxClientV2 client) throws DbxException {
-        for (File file : new File("data").listFiles(f -> f.getName().endsWith(".json"))) {
+    private record CommitData(Instant timestamp, String commitHash, Map<DataFile, String> fileHashes) {}
+    public enum FileAction {
+        DOWNLOAD,
+        UPLOAD,
+        NONE
+    }
+    private CommitData readCommitData(JsonParser parser) {
+        parser.nextToken();
+        assertEqual(parser.nextName(), "timestamp");
+        Instant timestamp = Instant.parse(parser.nextStringValue());
 
-            try (InputStream fileStream = new FileInputStream(file)) {
-                client.files().uploadBuilder("/" + file.getName()).withMode(WriteMode.OVERWRITE).uploadAndFinish(fileStream);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
+        assertEqual(parser.nextName(), "commitHash");
+        String commitHash = parser.nextStringValue();
+
+        assertEqual(parser.nextName(), "fileHashes");
+        parser.nextToken();
+        Map<DataFile, String> fileHashes = parser.readValueAs(new TypeReference<>() {});
+
+        return new CommitData(timestamp, commitHash, fileHashes);
     }
 
-    public void dbxSync() {
-        List<File> filesToSync = compareHashes();
-        System.out.println(filesToSync);
+    private record CommitDiff(FileAction action, List<DataFile> files) {}
+    private CommitDiff compareCommitFiles() {
+        CommitData localCommit, remoteCommit;
 
-        for (File file : filesToSync) {
-            try (InputStream fileStream = new FileInputStream(file)) {
-                dbxClient.get().files().uploadBuilder("/" + file.getName()).withMode(WriteMode.OVERWRITE).uploadAndFinish(fileStream);
-            }
-            catch (IOException | DbxException e) {
-                System.out.println("Error uploading file " + file.getName() + ": " + e.getMessage());
+        try (JsonParser parser = mapper.createParser(COMMIT_FILE)) {
+            localCommit = readCommitData(parser);
+        }
+
+        try (var remoteCommitFile = dbxClient.get().files().downloadBuilder("/" + COMMIT_FILE.getName()).start();
+             JsonParser parser = mapper.createParser(remoteCommitFile.getInputStream()))
+        {
+            remoteCommit = readCommitData(parser);
+        }
+        catch (DbxException | JsonAssertException e) {
+            System.out.println("Error loading remote commit file: " + e.getMessage());
+            System.out.println("Overwriting dropbox files");
+
+            return new CommitDiff(FileAction.UPLOAD, Arrays.asList(DataFile.values()));
+        }
+
+        List<DataFile> filesToSync = new ArrayList<>();
+        if (localCommit.commitHash().equals(remoteCommit.commitHash())) {
+            return new CommitDiff(FileAction.NONE, filesToSync);
+        }
+
+        FileAction fileAction = localCommit.timestamp.isAfter(remoteCommit.timestamp) ? FileAction.UPLOAD : FileAction.DOWNLOAD;
+
+        for (Map.Entry<DataFile, String> localHash : localCommit.fileHashes().entrySet()) {
+            if (!localHash.getValue().equals(remoteCommit.fileHashes().get(localHash.getKey()))) {
+                filesToSync.add(localHash.getKey());
             }
         }
+
+        return new CommitDiff(fileAction, filesToSync);
     }
 
     private List<File> compareHashes() {
         ArrayList<File> outdatedFiles = new ArrayList<>();
-        for (File file : DATA_FILES) {
+        for (DataFile dataFile : DataFile.values()) {
+            File file = dataFile.file;
             byte[] localHash, remoteHash;
             try {
                 localHash = genDbxHash(file);

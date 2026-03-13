@@ -3,6 +3,7 @@ package ninjamica.tasktwig;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -13,9 +14,9 @@ import tools.jackson.databind.JsonNode;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
-public record TwigList(StringProperty name, @JsonGetter("items") ObservableList<TwigListItem> items,
-                       BooleanProperty expanded) {
+public record TwigList(StringProperty name, ObservableList<TwigListItem> items, BooleanProperty expanded) {
     public static final int VERSION = 1;
 
     public record TwigListItem(StringProperty name, BooleanProperty done) {
@@ -34,12 +35,18 @@ public record TwigList(StringProperty name, @JsonGetter("items") ObservableList<
 
         @JsonGetter("name")
         public String getName() {
-            return name.get();
+            if (TaskTwig.useFxThread())
+                return CompletableFuture.supplyAsync(name::getValue, Platform::runLater).join();
+            else
+                return name.get();
         }
 
         @JsonGetter("done")
         public boolean isDone() {
-            return done.get();
+            if (TaskTwig.useFxThread())
+                return CompletableFuture.supplyAsync(done::get, Platform::runLater).join();
+            else
+                return done.get();
         }
     }
 
@@ -76,12 +83,30 @@ public record TwigList(StringProperty name, @JsonGetter("items") ObservableList<
 
     @JsonGetter("name")
     public String getName() {
-        return name.get();
+        if (TaskTwig.useFxThread())
+            return CompletableFuture.supplyAsync(name::getValue, Platform::runLater).join();
+        else
+            return name.get();
+    }
+
+    public List<TwigListItem> getItems() {
+        return new ArrayList<>(items);
+    }
+
+    @JsonGetter
+    public List<TwigListItem> getItemsJson() {
+        if (TaskTwig.useFxThread())
+            return CompletableFuture.supplyAsync(this::getItems, Platform::runLater).join();
+        else
+            return items;
     }
 
     @JsonGetter("expanded")
     public boolean isExpanded() {
-        return expanded.get();
+        if (TaskTwig.useFxThread())
+            return CompletableFuture.supplyAsync(expanded::get, Platform::runLater).join();
+        else
+            return expanded.get();
     }
 
 }

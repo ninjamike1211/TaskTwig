@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIncludeProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -13,6 +14,7 @@ import tools.jackson.databind.JsonNode;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @JsonIncludeProperties({"name", "start", "end", "interval", "lastDone"})
 public record Routine(StringProperty name, ObjectProperty<LocalTime> startTime, ObjectProperty<LocalTime> endTime, ObjectProperty<TwigInterval> interval, ObjectProperty<LocalDate> lastDone) {
@@ -67,27 +69,42 @@ public record Routine(StringProperty name, ObjectProperty<LocalTime> startTime, 
 
     @JsonGetter("name")
     public String getName() {
-        return name.get();
+        if (TaskTwig.useFxThread())
+            return CompletableFuture.supplyAsync(name::get, Platform::runLater).join();
+        else
+            return name.get();
     }
 
     @JsonGetter("start")
     public LocalTime getStart() {
-        return startTime.get();
+        if (TaskTwig.useFxThread())
+            return CompletableFuture.supplyAsync(startTime::get, Platform::runLater).join();
+        else
+            return startTime.get();
     }
 
     @JsonGetter("end")
     public LocalTime getEnd() {
-        return endTime.get();
+        if (TaskTwig.useFxThread())
+            return CompletableFuture.supplyAsync(endTime::get, Platform::runLater).join();
+        else
+            return endTime.get();
     }
 
     @JsonGetter("interval")
     public TwigInterval getInterval() {
-        return interval.get();
+        if (TaskTwig.useFxThread())
+            return CompletableFuture.supplyAsync(interval::get, Platform::runLater).join();
+        else
+            return interval.get();
     }
 
     @JsonGetter("lastDone")
     public LocalDate getLastDone() {
-        return lastDone.get();
+        if (TaskTwig.useFxThread())
+            return CompletableFuture.supplyAsync(lastDone::get, Platform::runLater).join();
+        else
+            return lastDone.get();
     }
 
     public boolean isDoneToday() {
