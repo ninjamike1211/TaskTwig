@@ -646,8 +646,8 @@ public class TaskTwigController {
         updateDbxAccountState();
 
         settingsSheet.getItems().addAll(
-                new LabelItem(twig.dbxName(), "DropBox Account", "DropBox", ""),
-                new ButtonItem(dbxButtonState, "Connect DropBox Account", "DropBox", "")
+                new LabelItem(twig.dbxName(), "Dropbox Account", "Dropbox", ""),
+                new ButtonItem(dbxButtonState, "Connect Dropbox Account", "Dropbox", "")
         );
 
     }
@@ -661,7 +661,7 @@ public class TaskTwigController {
     }
 
     public void closeTwig() {
-        twig.saveToFile();
+        twig.saveToFiles();
         twig.dbxSync();
     }
 
@@ -1006,11 +1006,12 @@ public class TaskTwigController {
     @FXML
     protected void onSyncButton() {
         if (twig.dbxClient().getValue() != null) {
-            syncLabel.setText("Saving data");
+            syncLabel.setText("Saving and hashing data");
+            syncButton.setDisable(true);
 
             var thread = new Thread(() -> {
                 twig.saveToFileFX();
-                Platform.runLater(() -> syncLabel.setText("Syncing"));
+                Platform.runLater(() -> syncLabel.setText("Syncing with Dropbox"));
 
                 var result = twig.dbxSync();
                 String labelText;
@@ -1020,7 +1021,10 @@ public class TaskTwigController {
                     case NONE -> labelText = "In sync as of " + LocalTime.now().format(timeFormat);
                     default -> labelText = "";
                 }
-                Platform.runLater(() -> syncLabel.setText(labelText));
+                Platform.runLater(() -> {
+                    syncLabel.setText(labelText);
+                    syncButton.setDisable(false);
+                });
             });
             thread.setDaemon(true);
             thread.start();

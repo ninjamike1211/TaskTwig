@@ -2,6 +2,9 @@ package ninjamica.tasktwig;
 
 import tools.jackson.databind.JsonNode;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+
 public record Exercise(String name, ExerciseUnit unit) {
 
     public enum ExerciseUnit {
@@ -24,5 +27,10 @@ public record Exercise(String name, ExerciseUnit unit) {
     public Exercise(TaskTwig.TwigJsonNode twigNode) {
         JsonNode node = twigNode.node();
         this(node.get("name").asString(), ExerciseUnit.valueOf(node.get("unit").asString()));
+    }
+
+    public void hashContents(MessageDigest digest) {
+        digest.update(name().getBytes(StandardCharsets.UTF_8));
+        digest.update(unit().displayName.getBytes(StandardCharsets.UTF_8));
     }
 }

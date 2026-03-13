@@ -4,17 +4,17 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIncludeProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import tools.jackson.databind.JsonNode;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 @JsonIncludeProperties({"name", "interval", "lastDone", "dueTime"})
 public record Task (StringProperty name, ObjectProperty<TwigInterval> interval, ObjectProperty<LocalDate> lastDone, ObjectProperty<LocalTime> dueTime) {
@@ -63,34 +63,22 @@ public record Task (StringProperty name, ObjectProperty<TwigInterval> interval, 
 
     @JsonGetter("name")
     public String getName() {
-        if (TaskTwig.useFxThread())
-            return CompletableFuture.supplyAsync(name::get, Platform::runLater).join();
-        else
-            return this.name.get();
+        return TaskTwig.callWithFXSafety(name::get);
     }
 
     @JsonGetter("interval")
     public TwigInterval getInterval() {
-        if (TaskTwig.useFxThread())
-            return CompletableFuture.supplyAsync(interval::get, Platform::runLater).join();
-        else
-            return this.interval.get();
+        return TaskTwig.callWithFXSafety(interval::get);
     }
 
     @JsonGetter("lastDone")
     public LocalDate getLastDone() {
-        if (TaskTwig.useFxThread())
-            return CompletableFuture.supplyAsync(lastDone::get, Platform::runLater).join();
-        else
-            return this.lastDone.get();
+        return TaskTwig.callWithFXSafety(lastDone::get);
     }
 
     @JsonGetter("dueTime")
     public LocalTime getDueTime() {
-        if (TaskTwig.useFxThread())
-            return CompletableFuture.supplyAsync(dueTime::get, Platform::runLater).join();
-        else
-            return dueTime.get();
+        return TaskTwig.callWithFXSafety(dueTime::get);
     }
 
     public boolean isDone() {
@@ -119,5 +107,18 @@ public record Task (StringProperty name, ObjectProperty<TwigInterval> interval, 
             this.lastDone.set(null);
             journalTasks.remove(this.getName());
         }
+    }
+
+    public void hashContents(MessageDigest digest) {
+        digest.update(getName().getBytes(StandardCharsets.UTF_8));
+        getInterval().hashContents(digest);
+
+        LocalDate lastDone = getLastDone();
+        if (lastDone != null)
+            digest.update(getLastDone().toString().getBytes(StandardCharsets.UTF_8));
+
+        LocalTime dueTime = getDueTime();
+        if (dueTime != null)
+            digest.update(getDueTime().toString().getBytes(StandardCharsets.UTF_8));
     }
 }

@@ -5,6 +5,8 @@ import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import tools.jackson.databind.JsonNode;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.Duration;
 import java.time.LocalDateTime;
 
@@ -36,5 +38,10 @@ public record Sleep(@JsonGetter("start") LocalDateTime start, @JsonGetter("end")
 
     public Duration length() {
         return Duration.between(start, end);
+    }
+
+    public void hashContents(MessageDigest digest) {
+        digest.update(start.toString().getBytes(StandardCharsets.UTF_8));
+        digest.update(end.toString().getBytes(StandardCharsets.UTF_8));
     }
 }

@@ -4,6 +4,9 @@ import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import tools.jackson.databind.JsonNode;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -46,5 +49,14 @@ public record Workout(@JsonGetter("start") LocalDateTime start,
 
     public Duration length() {
         return Duration.between(start, end);
+    }
+
+    public void hashContents(MessageDigest digest) {
+        digest.update(start.toString().getBytes(StandardCharsets.UTF_8));
+        digest.update(end.toString().getBytes(StandardCharsets.UTF_8));
+        for (Map.Entry<Exercise, Integer> exercise : exercises.entrySet()) {
+            exercise.getKey().hashContents(digest);
+            digest.update(ByteBuffer.allocate(4).putInt(exercise.getValue()));
+        }
     }
 }

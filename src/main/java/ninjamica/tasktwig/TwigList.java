@@ -3,7 +3,6 @@ package ninjamica.tasktwig;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -12,9 +11,10 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import tools.jackson.databind.JsonNode;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 public record TwigList(StringProperty name, ObservableList<TwigListItem> items, BooleanProperty expanded) {
     public static final int VERSION = 1;
@@ -35,18 +35,17 @@ public record TwigList(StringProperty name, ObservableList<TwigListItem> items, 
 
         @JsonGetter("name")
         public String getName() {
-            if (TaskTwig.useFxThread())
-                return CompletableFuture.supplyAsync(name::getValue, Platform::runLater).join();
-            else
-                return name.get();
+            return TaskTwig.callWithFXSafety(name::get);
         }
 
         @JsonGetter("done")
         public boolean isDone() {
-            if (TaskTwig.useFxThread())
-                return CompletableFuture.supplyAsync(done::get, Platform::runLater).join();
-            else
-                return done.get();
+            return TaskTwig.callWithFXSafety(done::get);
+        }
+
+        public void hashContents(MessageDigest digest) {
+            digest.update(getName().getBytes(StandardCharsets.UTF_8));
+            digest.update((byte) (isDone() ? 1 : 0));
         }
     }
 
@@ -83,30 +82,28 @@ public record TwigList(StringProperty name, ObservableList<TwigListItem> items, 
 
     @JsonGetter("name")
     public String getName() {
-        if (TaskTwig.useFxThread())
-            return CompletableFuture.supplyAsync(name::getValue, Platform::runLater).join();
-        else
-            return name.get();
-    }
-
-    public List<TwigListItem> getItems() {
-        return new ArrayList<>(items);
+        return TaskTwig.callWithFXSafety(name::get);
     }
 
     @JsonGetter
     public List<TwigListItem> getItemsJson() {
         if (TaskTwig.useFxThread())
-            return CompletableFuture.supplyAsync(this::getItems, Platform::runLater).join();
+            return TaskTwig.callWithFXSafety(() -> new ArrayList<>(items));
         else
             return items;
     }
 
     @JsonGetter("expanded")
     public boolean isExpanded() {
-        if (TaskTwig.useFxThread())
-            return CompletableFuture.supplyAsync(expanded::get, Platform::runLater).join();
-        else
-            return expanded.get();
+        return TaskTwig.callWithFXSafety(expanded::get);
+    }
+
+    public void hashContents(MessageDigest digest) {
+        digest.update(getName().getBytes(StandardCharsets.UTF_8));
+        for (TwigListItem item : getItemsJson()) {
+            item.hashContents(digest);
+        }
+        digest.update((byte) (isExpanded() ? 1 : 0));
     }
 
 }

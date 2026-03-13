@@ -10,6 +10,8 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import tools.jackson.databind.JsonNode;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -42,10 +44,11 @@ public interface TwigInterval {
     LocalDate previous();
 
     /**
-     *
      * @return whether the interval includes today
      */
     boolean isToday();
+
+    void hashContents(MessageDigest digest);
 
     static TwigInterval parseFromJson(JsonNode node) {
         switch (node.get("@type").asString()) {
@@ -86,20 +89,29 @@ public interface TwigInterval {
     @JsonIncludeProperties()
     class DailyInterval implements TwigInterval {
 
+        @Override
         public LocalDate next() {
             return TaskTwig.effectiveDate();
         }
 
+        @Override
         public LocalDate nextAfter() {
             return TaskTwig.effectiveDate().plusDays(1);
         }
 
+        @Override
         public LocalDate previous() {
             return TaskTwig.effectiveDate().minusDays(1);
         }
 
+        @Override
         public boolean isToday() {
             return true;
+        }
+
+        @Override
+        public void hashContents(MessageDigest digest) {
+            digest.update("daily".getBytes(StandardCharsets.UTF_8));
         }
     }
 
@@ -132,6 +144,7 @@ public interface TwigInterval {
             }
         }
 
+        @Override
         public LocalDate next() {
             int today = TaskTwig.effectiveDate().getDayOfWeek().ordinal();
 
@@ -146,6 +159,7 @@ public interface TwigInterval {
             return null;
         }
 
+        @Override
         public LocalDate nextAfter() {
             int today = TaskTwig.effectiveDate().getDayOfWeek().ordinal();
 
@@ -160,6 +174,7 @@ public interface TwigInterval {
             return null;
         }
 
+        @Override
         public LocalDate previous() {
             int today = TaskTwig.effectiveDate().getDayOfWeek().ordinal();
 
@@ -174,9 +189,17 @@ public interface TwigInterval {
             return null;
         }
 
+        @Override
         public boolean isToday() {
             int today =  TaskTwig.effectiveDate().getDayOfWeek().ordinal();
             return dayOfWeekMap[today].get();
+        }
+
+        @Override
+        public void hashContents(MessageDigest digest) {
+            for (boolean day : getDayOfWeekMapJson()) {
+                digest.update((byte) (day ? 1 : 0));
+            }
         }
 
         public boolean[]  getDayOfWeekMap() {
@@ -189,10 +212,7 @@ public interface TwigInterval {
 
         @JsonGetter("daysOfWeek")
         public boolean[] getDayOfWeekMapJson() {
-            if (TaskTwig.useFxThread())
-                return CompletableFuture.supplyAsync(this::getDayOfWeekMap, Platform::runLater).join();
-            else
-                return getDayOfWeekMap();
+            return TaskTwig.callWithFXSafety(this::getDayOfWeekMap);
         }
 
         public BooleanProperty dayOfWeekProperty(int dayIndex) {
@@ -293,14 +313,21 @@ public interface TwigInterval {
             return TaskTwig.effectiveDate().equals(this.next());
         }
 
-        public List<Integer> getDueDays() {
-            return new ArrayList<>(this.dueDays);
+        @Override
+        public void hashContents(MessageDigest digest) {
+            for (int day : getDueDaysJson()) {
+                digest.update((byte) day);
+            }
+        }
+
+        public ObservableList<Integer> getDueDays() {
+            return this.dueDays;
         }
 
         @JsonGetter("dueDays")
         public List<Integer> getDueDaysJson() {
             if (TaskTwig.useFxThread())
-                return CompletableFuture.supplyAsync(this::getDueDays, Platform::runLater).join();
+                return CompletableFuture.supplyAsync(() -> new ArrayList<>(dueDays), Platform::runLater).join();
             else
                 return this.dueDays;
         }
@@ -352,12 +379,14 @@ public interface TwigInterval {
             return TaskTwig.effectiveDate().equals(date.get());
         }
 
+        @Override
+        public void hashContents(MessageDigest digest) {
+            digest.update(getDate().toString().getBytes(StandardCharsets.UTF_8));
+        }
+
         @JsonGetter("date")
-        public LocalDate date() {
-            if (TaskTwig.useFxThread())
-                return CompletableFuture.supplyAsync(date::get, Platform::runLater).join();
-            else
-                return date.get();
+        public LocalDate getDate() {
+            return TaskTwig.callWithFXSafety(date::get);
         }
     }
 
@@ -382,6 +411,11 @@ public interface TwigInterval {
         @Override
         public boolean isToday() {
             return false;
+        }
+
+        @Override
+        public void hashContents(MessageDigest digest) {
+            digest.update("none".getBytes(StandardCharsets.UTF_8));
         }
     }
 }

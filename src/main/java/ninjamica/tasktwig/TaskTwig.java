@@ -5,6 +5,7 @@ import com.dropbox.core.json.JsonReader;
 import com.dropbox.core.oauth.DbxCredential;
 import com.dropbox.core.v2.DbxClientV2;
 import com.dropbox.core.v2.files.WriteMode;
+import javafx.application.Platform;
 import javafx.beans.property.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -20,6 +21,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
@@ -29,6 +31,8 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 
 public class TaskTwig implements Serializable {
 
@@ -157,6 +161,13 @@ public class TaskTwig implements Serializable {
 
     static boolean useFxThread() {
         return TaskTwig.useFXThread;
+    }
+
+    static <U> U callWithFXSafety(Supplier<U> supplier) {
+        if (TaskTwig.useFXThread)
+            return CompletableFuture.supplyAsync(supplier, Platform::runLater).join();
+        else
+            return supplier.get();
     }
 
     public void startSleep() {
@@ -312,103 +323,119 @@ public class TaskTwig implements Serializable {
 
     public void saveToFileFX() {
         TaskTwig.useFXThread = true;
-        saveToFile();
+        saveToFiles();
         TaskTwig.useFXThread = false;
     }
 
-    public void saveToFile() {
-        try (JsonGenerator generator = mapper.createGenerator(DataFile.SLEEP.file, JsonEncoding.UTF8)) {
-            generator.writeStartObject();
+    public void saveToFiles() {
+        Map<DataFile, byte[]> liveHashes = genLiveDataHashes();
+        List<DataFile> saveFiles = findOutOfDateFiles(liveHashes);
+        System.out.println("Saving files: " + saveFiles);
 
-            generator.writeNumberProperty("version", Sleep.VERSION);
-            generator.writePOJOProperty("sleepProgressStart", this.sleepStart.getValue());
-            generator.writePOJOProperty("sleepRecords", this.sleepRecords);
-            generator.writeEndObject();
-        }
+        for (DataFile file : saveFiles) {
+            switch (file) {
+                case SLEEP -> {
+                    try (JsonGenerator generator = mapper.createGenerator(DataFile.SLEEP.file, JsonEncoding.UTF8)) {
+                        generator.writeStartObject();
 
-        try (JsonGenerator generator = mapper.createGenerator(DataFile.WORKOUT.file, JsonEncoding.UTF8)) {
-            generator.writeStartObject();
+                        generator.writeNumberProperty("version", Sleep.VERSION);
+                        generator.writePOJOProperty("sleepProgressStart", this.sleepStart.getValue());
+                        generator.writePOJOProperty("sleepRecords", this.sleepRecords);
+                        generator.writeEndObject();
+                    }
+                }
+                case WORKOUT -> {
+                    try (JsonGenerator generator = mapper.createGenerator(DataFile.WORKOUT.file, JsonEncoding.UTF8)) {
+                        generator.writeStartObject();
 
-            generator.writeNumberProperty("version", Workout.VERSION);
-            generator.writePOJOProperty("workoutProgressStart", this.workoutStart.getValue());
-            generator.writePOJOProperty("exercises", this.exerciseList);
-            generator.writePOJOProperty("workoutRecords", this.workoutRecords);
+                        generator.writeNumberProperty("version", Workout.VERSION);
+                        generator.writePOJOProperty("workoutProgressStart", this.workoutStart.getValue());
+                        generator.writePOJOProperty("exercises", this.exerciseList);
+                        generator.writePOJOProperty("workoutRecords", this.workoutRecords);
 
-            generator.writeEndObject();
-        }
+                        generator.writeEndObject();
+                    }
+                }
+                case TASK -> {
+                    try (JsonGenerator generator = mapper.createGenerator(DataFile.TASK.file, JsonEncoding.UTF8)) {
+                        generator.writeStartObject();
 
-        try (JsonGenerator generator = mapper.createGenerator(DataFile.TASK.file, JsonEncoding.UTF8)) {
-            generator.writeStartObject();
+                        generator.writeNumberProperty("version", Task.VERSION);
 
-            generator.writeNumberProperty("version", Task.VERSION);
+                        generator.writeArrayPropertyStart("tasks");
+                        for (Task task : taskList) {
+                            generator.writePOJO(task);
+                        }
+                        generator.writeEndArray();
 
-            generator.writeArrayPropertyStart("tasks");
-            for (Task task : taskList) {
-                generator.writePOJO(task);
+                        generator.writeEndObject();
+                    }
+                }
+                case LIST -> {
+                    try (JsonGenerator generator = mapper.createGenerator(DataFile.LIST.file, JsonEncoding.UTF8)) {
+                        generator.writeStartObject();
+
+                        generator.writeNumberProperty("version", TwigList.VERSION);
+
+                        generator.writeArrayPropertyStart("lists");
+                        for (TwigList list : twigLists) {
+                            generator.writePOJO(list);
+                        }
+                        generator.writeEndArray();
+
+                        generator.writeEndObject();
+                    }
+                }
+                case ROUTINE -> {
+                    try (JsonGenerator generator = mapper.createGenerator(DataFile.ROUTINE.file, JsonEncoding.UTF8)) {
+                        generator.writeStartObject();
+
+                        generator.writeNumberProperty("version", Routine.VERSION);
+
+                        generator.writeArrayPropertyStart("routines");
+                        for (Routine routine : routineList) {
+                            generator.writePOJO(routine);
+                        }
+                        generator.writeEndArray();
+
+                        generator.writeEndObject();
+                    }
+                }
+                case JOURNAL -> {
+                    try (JsonGenerator generator = mapper.createGenerator(DataFile.JOURNAL.file, JsonEncoding.UTF8)) {
+                        generator.writeStartObject();
+
+                        generator.writeNumberProperty("version", Journal.VERSION);
+
+                        generator.writePOJOProperty("journals", this.journalMap);
+
+                        generator.writeEndObject();
+                    }
+                }
             }
-            generator.writeEndArray();
-
-            generator.writeEndObject();
         }
 
-        try (JsonGenerator generator = mapper.createGenerator(DataFile.LIST.file, JsonEncoding.UTF8)) {
-            generator.writeStartObject();
+        if (!saveFiles.isEmpty()) {
+            try (JsonGenerator generator = mapper.createGenerator(COMMIT_FILE, JsonEncoding.UTF8)) {
+                var digest = MessageDigest.getInstance("SHA-256");
+                Map<DataFile, String> fileHashes = new HashMap<>();
+                for (Map.Entry<DataFile, byte[]> hash : liveHashes.entrySet()) {
+                    fileHashes.put(hash.getKey(), Base64.getEncoder().encodeToString(hash.getValue()));
+                    digest.update(hash.getValue());
+                }
+                String commitHash = Base64.getEncoder().encodeToString(digest.digest());
 
-            generator.writeNumberProperty("version", TwigList.VERSION);
+                generator.writeStartObject();
 
-            generator.writeArrayPropertyStart("lists");
-            for (TwigList list : twigLists) {
-                generator.writePOJO(list);
+                generator.writePOJOProperty("timestamp", Instant.now());
+                generator.writeStringProperty("commitHash", commitHash);
+                generator.writePOJOProperty("fileHashes", fileHashes);
+
+                generator.writeEndObject();
+
+            } catch (NoSuchAlgorithmException e) {
+                throw new RuntimeException(e);
             }
-            generator.writeEndArray();
-
-            generator.writeEndObject();
-        }
-
-        try (JsonGenerator generator = mapper.createGenerator(DataFile.ROUTINE.file, JsonEncoding.UTF8)) {
-            generator.writeStartObject();
-
-            generator.writeNumberProperty("version", Routine.VERSION);
-
-            generator.writeArrayPropertyStart("routines");
-            for (Routine routine : routineList) {
-                generator.writePOJO(routine);
-            }
-            generator.writeEndArray();
-
-            generator.writeEndObject();
-        }
-
-        try (JsonGenerator generator = mapper.createGenerator(DataFile.JOURNAL.file, JsonEncoding.UTF8)) {
-            generator.writeStartObject();
-
-            generator.writeNumberProperty("version", Journal.VERSION);
-
-            generator.writePOJOProperty("journals", this.journalMap);
-
-            generator.writeEndObject();
-        }
-
-        try (JsonGenerator generator = mapper.createGenerator(COMMIT_FILE, JsonEncoding.UTF8)) {
-            var digest = MessageDigest.getInstance("SHA-256");
-            Map<DataFile, String> fileHashes = new HashMap<>();
-            for (DataFile dataFile : DataFile.values()) {
-                byte[] hash = genDbxHash(dataFile.file);
-                fileHashes.put(dataFile, Base64.getEncoder().encodeToString(hash));
-                digest.update(hash);
-            }
-            String commitHash = Base64.getEncoder().encodeToString(digest.digest());
-
-            generator.writeStartObject();
-
-            generator.writePOJOProperty("timestamp", Instant.now());
-            generator.writeStringProperty("commitHash", commitHash);
-            generator.writePOJOProperty("fileHashes", fileHashes);
-
-            generator.writeEndObject();
-
-        } catch (NoSuchAlgorithmException | IOException e) {
-            throw new RuntimeException(e);
         }
     }
 
@@ -518,7 +545,6 @@ public class TaskTwig implements Serializable {
             parser.nextToken();
             parseJsonMap(journalMap, parser, LocalDate::parse, Journal::new, version);
             this.journalMap = FXCollections.observableMap(journalMap);
-//            this.journalMap = FXCollections.observableMap(parser.readValueAs(new TypeReference<SortedMap<LocalDate, Journal>>() {}));
         } catch (JsonAssertException | JacksonIOException e) {
             this.journalMap = FXCollections.observableMap(new TreeMap<>());
         }
@@ -548,6 +574,88 @@ public class TaskTwig implements Serializable {
             V value = valueCallback.call(new TwigJsonNode(node, version));
             map.put(key, value);
             parser.nextToken();
+        }
+    }
+
+    private List<DataFile> findOutOfDateFiles(Map<DataFile, byte[]> liveHashes) {
+        List<DataFile> files = new ArrayList<>();
+
+        try (JsonParser parser = mapper.createParser(COMMIT_FILE)) {
+            CommitData diskCommit = readCommitData(parser);
+
+            for (Map.Entry<DataFile, byte[]> liveHash : liveHashes.entrySet()) {
+
+                if (!diskCommit.fileHashes.containsKey(liveHash.getKey())
+                        || !Arrays.equals(liveHash.getValue(), Base64.getDecoder().decode(diskCommit.fileHashes.get(liveHash.getKey())))) {
+                    files.add(liveHash.getKey());
+                }
+            }
+        }
+
+        return files;
+    }
+
+    private Map<DataFile, byte[]> genLiveDataHashes() {
+        Map<DataFile, byte[]> hashes = new HashMap<>();
+        for (DataFile dataFile : DataFile.values()) {
+            hashes.put(dataFile, hashLiveData(dataFile));
+        }
+        return hashes;
+    }
+
+    private byte[] hashLiveData(DataFile file) {
+        try {
+            var digest = MessageDigest.getInstance("SHA-256");
+            switch (file) {
+                case SLEEP -> {
+                    if (callWithFXSafety(this::isSleeping))
+                        digest.update(callWithFXSafety(sleepStart::get).toString().getBytes(StandardCharsets.UTF_8));
+
+                    Map<LocalDate, Sleep> sleepMap = callWithFXSafety(() -> new HashMap<>(sleepRecords));
+                    for (Map.Entry<LocalDate, Sleep> sleepEntry : sleepMap.entrySet()) {
+                        digest.update(sleepEntry.getKey().toString().getBytes(StandardCharsets.UTF_8));
+                        sleepEntry.getValue().hashContents(digest);
+                    }
+                }
+                case WORKOUT -> {
+                    if (callWithFXSafety(this::isWorkingOut))
+                        digest.update(callWithFXSafety(workoutStart::get).toString().getBytes(StandardCharsets.UTF_8));
+
+                    for (Exercise exercise : callWithFXSafety(() -> new ArrayList<>(exerciseList))) {
+                        exercise.hashContents(digest);
+                    }
+
+                    for (Workout workout : callWithFXSafety(() -> new ArrayList<>(workoutRecords))) {
+                        workout.hashContents(digest);
+                    }
+                }
+                case TASK ->  {
+                    for (Task task : callWithFXSafety(() -> new ArrayList<>(taskList))) {
+                        task.hashContents(digest);
+                    }
+                }
+                case ROUTINE -> {
+                    for (Routine routine : callWithFXSafety(() -> new ArrayList<>(routineList))) {
+                        routine.hashContents(digest);
+                    }
+                }
+                case LIST -> {
+                    for (TwigList twigList : callWithFXSafety(() -> new ArrayList<>(twigLists))) {
+                        twigList.hashContents(digest);
+                    }
+                }
+                case JOURNAL -> {
+                    Map<LocalDate, Journal> journals = callWithFXSafety(() -> new HashMap<>(journalMap));
+                    for (Map.Entry<LocalDate, Journal> journalEntry : journals.entrySet()) {
+                        digest.update(journalEntry.getKey().toString().getBytes(StandardCharsets.UTF_8));
+                        journalEntry.getValue().hashContents(digest);
+                    }
+                }
+            }
+
+            return digest.digest();
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -622,7 +730,7 @@ public class TaskTwig implements Serializable {
     }
 
     public FileAction dbxSync() {
-        CommitDiff commitDiff = compareCommitFiles();
+        CommitDiff commitDiff = compareCommitToDbx();
         System.out.println("commitDiff: " + commitDiff);
 
         switch(commitDiff.action) {
@@ -684,7 +792,7 @@ public class TaskTwig implements Serializable {
     }
 
     private record CommitDiff(FileAction action, List<DataFile> files) {}
-    private CommitDiff compareCommitFiles() {
+    private CommitDiff compareCommitToDbx() {
         CommitData localCommit, remoteCommit;
 
         try (JsonParser parser = mapper.createParser(COMMIT_FILE)) {
@@ -717,23 +825,6 @@ public class TaskTwig implements Serializable {
         }
 
         return new CommitDiff(fileAction, filesToSync);
-    }
-
-    private byte[] genDbxHash(File file) throws IOException {
-        try (var fileReader = new FileInputStream(file)) {
-            var chunkHasher = MessageDigest.getInstance("SHA-256");
-            var overallHasher = MessageDigest.getInstance("SHA-256");
-            byte[] chunk = new byte[4194304];
-            while(fileReader.available() > 0) {
-                int read = fileReader.readNBytes(chunk, 0, chunk.length);
-                chunkHasher.update(chunk, 0, read);
-                overallHasher.update(chunkHasher.digest());
-            }
-            return overallHasher.digest();
-        }
-        catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        }
     }
 
 
@@ -886,7 +977,7 @@ public class TaskTwig implements Serializable {
         }
 
         userIn.close();
-        tracker.saveToFile();
+        tracker.saveToFiles();
     }
 
 }

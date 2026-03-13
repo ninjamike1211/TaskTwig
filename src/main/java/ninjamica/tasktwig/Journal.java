@@ -4,16 +4,16 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIncludeProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import tools.jackson.databind.JsonNode;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 @JsonIncludeProperties({"text", "routines", "tasks"})
 public record Journal(StringProperty text,
@@ -22,7 +22,7 @@ public record Journal(StringProperty text,
     public static final int VERSION = 2;
 
     public Journal() {
-        this(new SimpleStringProperty(),
+        this(new SimpleStringProperty(""),
                 FXCollections.observableArrayList(),
                 FXCollections.observableArrayList());
     }
@@ -71,34 +71,37 @@ public record Journal(StringProperty text,
 
     @JsonGetter("text")
     public String getText() {
-        if (TaskTwig.useFxThread())
-            return CompletableFuture.supplyAsync(text::getValue, Platform::runLater).join();
-        else
-            return text.getValue();
-    }
-
-    public List<String> getCompletedTasks() {
-        return new ArrayList<>(completedTasks);
+        return TaskTwig.callWithFXSafety(text::getValue);
     }
 
     @JsonGetter("tasks")
     public List<String> getTasksJson() {
         if (TaskTwig.useFxThread())
-            return CompletableFuture.supplyAsync(this::getCompletedTasks, Platform::runLater).join();
+            return TaskTwig.callWithFXSafety(() -> new ArrayList<>(completedTasks));
         else
             return completedTasks;
-    }
-
-    public List<String> getCompletedRoutines() {
-        return new ArrayList<>(completedRoutines);
     }
 
     @JsonGetter("routines")
     public List<String> getRoutinesJson() {
         if (TaskTwig.useFxThread())
-            return CompletableFuture.supplyAsync(this::getCompletedRoutines, Platform::runLater).join();
+            return TaskTwig.callWithFXSafety(() -> new ArrayList<>(completedRoutines));
         else
             return completedRoutines;
+    }
+
+    public void hashContents(MessageDigest digest) {
+        digest.update(getText().getBytes(StandardCharsets.UTF_8));
+
+        List<String> tasks = getTasksJson();
+        for (String task : tasks) {
+            digest.update(task.getBytes(StandardCharsets.UTF_8));
+        }
+
+        List<String> routines = getRoutinesJson();
+        for (String routine : routines) {
+            digest.update(routine.getBytes(StandardCharsets.UTF_8));
+        }
     }
 
 }
