@@ -6,7 +6,9 @@ import com.dropbox.core.oauth.DbxCredential;
 import com.dropbox.core.v2.DbxClientV2;
 import com.dropbox.core.v2.files.WriteMode;
 import javafx.application.Platform;
-import javafx.beans.property.*;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.ReadOnlyObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.ObservableMap;
@@ -30,7 +32,6 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 public class TaskTwig implements Serializable {
@@ -740,7 +741,7 @@ public class TaskTwig implements Serializable {
         dbxClient.set(new DbxClientV2(config, credential));
     }
 
-    public FileAction dbxSync(BiFunction<CommitData, CommitData, FileAction> conflictCallback) {
+    public FileAction dbxSync(Supplier<FileAction> conflictCallback) {
         CommitDiff commitDiff = compareCommitToDbx(conflictCallback);
         return dbxSync(commitDiff);
     }
@@ -831,7 +832,7 @@ public class TaskTwig implements Serializable {
     }
 
     public record CommitDiff(FileAction action, List<DataFile> files) {}
-    public CommitDiff compareCommitToDbx(BiFunction<CommitData, CommitData, FileAction> conflictCallback) {
+    public CommitDiff compareCommitToDbx(Supplier<FileAction> conflictCallback) {
         List<DataFile> filesToSync = new ArrayList<>();
         CommitData localCommit = readLocalCommitData();
         CommitData remoteCommit = readDbxCommitData();
@@ -863,7 +864,7 @@ public class TaskTwig implements Serializable {
             fileAction = FileAction.DOWNLOAD;
         }
         else {
-            fileAction = conflictCallback.apply(localCommit, remoteCommit);
+            fileAction = CompletableFuture.supplyAsync(conflictCallback, Platform::runLater).join();
         }
 
         switch (fileAction) {

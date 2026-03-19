@@ -1120,7 +1120,7 @@ public class TaskTwigController {
         }
     }
 
-    private TaskTwig.FileAction handleDataConflict(TaskTwig.CommitData localCommit, TaskTwig.CommitData remoteCommit) {
+    private TaskTwig.FileAction handleDataConflict() {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setHeaderText("Conflicting data between local and remote!");
         alert.setContentText("Would you like to keep the local data or the remote (Dropbox) data?");
