@@ -10,6 +10,7 @@ import javafx.util.StringConverter;
 
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 
 /**
  * A modified Spinner which allows the user to select a specific time.
@@ -32,35 +33,45 @@ public class TimeSpinner {
         SpinnerValueFactory<LocalTime> valueFactory = new SpinnerValueFactory<>() {
             @Override
             public void decrement(int steps) {
-                switch (editSection) {
-                    case HOUR:
-                        setValue(getValue().minusHours(steps));
-                        break;
+                if (getValue() == null) {
+                    setValue(LocalTime.NOON);
+                }
+                else {
+                    switch (editSection) {
+                        case HOUR:
+                            setValue(getValue().minusHours(steps));
+                            break;
 
-                    case MINUTE:
-                        setValue(getValue().minusMinutes(steps));
-                        break;
+                        case MINUTE:
+                            setValue(getValue().minusMinutes(steps));
+                            break;
 
-                    case AM_PM:
-                        setValue(getValue().minusHours(12 * (steps % 2)));
-                        break;
+                        case AM_PM:
+                            setValue(getValue().minusHours(12 * (steps % 2)));
+                            break;
+                    }
                 }
             }
 
             @Override
             public void increment(int steps) {
-                switch (editSection) {
-                    case HOUR:
-                        setValue(getValue().plusHours(steps));
-                        break;
+                if (getValue() == null) {
+                    setValue(LocalTime.NOON);
+                }
+                else {
+                    switch (editSection) {
+                        case HOUR:
+                            setValue(getValue().plusHours(steps));
+                            break;
 
-                    case MINUTE:
-                        setValue(getValue().plusMinutes(steps));
-                        break;
+                        case MINUTE:
+                            setValue(getValue().plusMinutes(steps));
+                            break;
 
-                    case AM_PM:
-                        setValue(getValue().plusHours(12 * (steps % 2)));
-                        break;
+                        case AM_PM:
+                            setValue(getValue().plusHours(12 * (steps % 2)));
+                            break;
+                    }
                 }
             }
         };
@@ -68,12 +79,27 @@ public class TimeSpinner {
         StringConverter<LocalTime> timeConverter = new StringConverter<>() {
             @Override
             public String toString(LocalTime time) {
-                return time.format(timeFormat);
+                if (time == null)
+                    return "";
+                else
+                    return time.format(timeFormat);
             }
 
             @Override
             public LocalTime fromString(String time) {
-                return LocalTime.parse(time, timeFormat);
+                if (time == null || time.isEmpty()) {
+                    return null;
+                }
+                else {
+                    try {
+                        return LocalTime.parse(time, timeFormat);
+                    }
+                    catch (DateTimeParseException e) {
+                        LocalTime lastValue = valueFactory.getValue();
+                        spinner.getEditor().setText(toString(lastValue));
+                        return lastValue;
+                    }
+                }
             }
         };
 
@@ -96,48 +122,49 @@ public class TimeSpinner {
             }
         });
 
-        spinner.valueProperty().addListener((observable, oldValue, newValue) -> {
-            int colonPos = timeSpinner.getEditor().getText().indexOf(":");
-            int spacePos = timeSpinner.getEditor().getText().indexOf(" ");
+        spinner.valueProperty().subscribe(newValue -> {
+            if (newValue != null) {
+                int colonPos = timeSpinner.getEditor().getText().indexOf(":");
+                int spacePos = timeSpinner.getEditor().getText().indexOf(" ");
 
-            switch (editSection) {
-                case HOUR:
-                    spinner.getEditor().positionCaret(colonPos);
-                    break;
+                switch (editSection) {
+                    case HOUR:
+                        spinner.getEditor().positionCaret(colonPos);
+                        break;
 
-                case MINUTE:
-                    spinner.getEditor().positionCaret(spacePos);
-                    break;
+                    case MINUTE:
+                        spinner.getEditor().positionCaret(spacePos);
+                        break;
 
-                case AM_PM:
-                    spinner.getEditor().positionCaret(spacePos+3);
-                    break;
+                    case AM_PM:
+                        spinner.getEditor().positionCaret(spacePos + 3);
+                        break;
+                }
             }
         });
     }
 
     private void setEditMode(Event event) {
-        int caretPos = timeSpinner.getEditor().getCaretPosition();
-        if (event instanceof KeyEvent) {
-            if (((KeyEvent) event).getCode() == KeyCode.LEFT) {
-                caretPos = (caretPos > 0) ? (caretPos - 1) : 0;
+        if (timeSpinner.getValue() != null) {
+            int caretPos = timeSpinner.getEditor().getCaretPosition();
+            if (event instanceof KeyEvent) {
+                if (((KeyEvent) event).getCode() == KeyCode.LEFT) {
+                    caretPos = (caretPos > 0) ? (caretPos - 1) : 0;
+                } else if (((KeyEvent) event).getCode() == KeyCode.RIGHT) {
+                    caretPos = (caretPos < timeSpinner.getEditor().getText().length()) ? (caretPos + 1) : caretPos;
+                }
             }
-            else if (((KeyEvent) event).getCode() == KeyCode.RIGHT) {
-                caretPos = (caretPos < timeSpinner.getEditor().getText().length()) ? (caretPos + 1) : caretPos;
+
+            int colonPos = timeSpinner.getEditor().getText().indexOf(":");
+            int spacePos = timeSpinner.getEditor().getText().indexOf(" ");
+
+            if (caretPos <= colonPos) {
+                editSection = EditMode.HOUR;
+            } else if (caretPos <= spacePos) {
+                editSection = EditMode.MINUTE;
+            } else {
+                editSection = EditMode.AM_PM;
             }
-        }
-
-        int colonPos = timeSpinner.getEditor().getText().indexOf(":");
-        int spacePos = timeSpinner.getEditor().getText().indexOf(" ");
-
-        if (caretPos <= colonPos) {
-            editSection = EditMode.HOUR;
-        }
-        else if (caretPos <= spacePos) {
-            editSection = EditMode.MINUTE;
-        }
-        else {
-            editSection = EditMode.AM_PM;
         }
     }
 

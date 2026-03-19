@@ -3,7 +3,10 @@ package ninjamica.tasktwig.ui;
 import com.dropbox.core.DbxException;
 import javafx.application.Application;
 import javafx.application.Platform;
-import javafx.beans.property.*;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleFloatProperty;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
@@ -30,10 +33,7 @@ import javafx.util.StringConverter;
 import javafx.util.Subscription;
 import ninjamica.tasktwig.*;
 import ninjamica.tasktwig.TwigList.TwigListItem;
-import ninjamica.tasktwig.ui.PropertySheetItems.ButtonItem;
-import ninjamica.tasktwig.ui.PropertySheetItems.LabelItem;
 import org.controlsfx.control.PopOver;
-import org.controlsfx.control.PropertySheet;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -42,9 +42,6 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 
 public class TaskTwigController {
 
@@ -78,13 +75,13 @@ public class TaskTwigController {
     @FXML private TableView<Task> taskTableView;
     @FXML private TableColumn<Task, Boolean> taskDoneCol;
     @FXML private TableColumn<Task, String> taskNameCol;
-    @FXML private TableColumn<Task, String> taskDateTimeCol;
-    @FXML private TableColumn<Task, String> taskRepeatCol;
+    @FXML private TableColumn<Task, TaskInterval> taskDateTimeCol;
+    @FXML private TableColumn<Task, TaskInterval> taskRepeatCol;
     @FXML private TreeView<Object> listTree;
 
     @FXML private TableView<Routine> routineTable;
     @FXML private TableColumn<Routine, String> routineNameCol;
-    @FXML private TableColumn<Routine, TwigInterval> routineIntervalCol;
+    @FXML private TableColumn<Routine, RoutineInterval> routineIntervalCol;
     @FXML private TableColumn<Routine, LocalTime> routineDueCol;
     @FXML private Button routineButton;
 
@@ -93,7 +90,10 @@ public class TaskTwigController {
     @FXML private ListView<String> journalRoutineList;
     @FXML private ListView<String> journalTaskList;
 
-    @FXML private PropertySheet settingsSheet;
+    @FXML private Label settingsDayStart;
+    @FXML private Label settingsNightStart;
+    @FXML private Label settingsDbxName;
+    @FXML private Button settingsDbxButton;
 
     @FXML private Button syncButton;
     @FXML private Label syncLabel;
@@ -113,7 +113,6 @@ public class TaskTwigController {
     private final XYChart.Series<String, Float> sleepLenChartData = new XYChart.Series<>();
     private final XYChart.Series<String, Float> sleepStartChartData = new XYChart.Series<>();
     private final XYChart.Series<String, Float> sleepEndChartData = new XYChart.Series<>();
-    private final ButtonItem.ButtonItemState dbxButtonState = new ButtonItem.ButtonItemState(new SimpleStringProperty(), new SimpleBooleanProperty(true), this::onDbxButton);
 
 
     @FXML
@@ -221,12 +220,12 @@ public class TaskTwigController {
                     checkBox.setSelected(item.isDone());
 
                     // TODO: this results in due date/time text not updating because interval.next is not an observable value
-                    if (item.getInterval().next() != null) {
+                    if (item.getInterval().nextDue() != null) {
                         if (item.getDueTime() != null) {
-                            dueText.setText(shortDateFormat.format(item.getInterval().next()) + " at " + timeFormat.format(item.getDueTime()));
+                            dueText.setText(shortDateFormat.format(item.getInterval().nextDue()) + " at " + timeFormat.format(item.getDueTime()));
                         }
                         else {
-                            dueText.setText(shortDateFormat.format(item.getInterval().next()));
+                            dueText.setText(shortDateFormat.format(item.getInterval().nextDue()));
                         }
                     }
                     else {
@@ -293,71 +292,127 @@ public class TaskTwigController {
         taskDoneCol.setCellValueFactory(task -> new SimpleBooleanProperty(task.getValue().isDone()));
         taskDoneCol.setCellFactory(col -> new TaskDoneCell());
         taskNameCol.setCellValueFactory(task -> task.getValue().name());
-        taskDateTimeCol.setCellValueFactory(task -> {
-            if(task.getValue().getInterval().next() != null) {
-                String strVal = task.getValue().getInterval().next().format(dateFormat);
+        taskDateTimeCol.setCellFactory(column -> new TableCell<>() {
+            private Subscription sub = Subscription.EMPTY;
 
-                if (task.getValue().getDueTime() != null) {
-                    strVal += " " + task.getValue().getDueTime().format(timeFormat);
-                }
+            @Override
+            protected void updateItem(TaskInterval item, boolean empty) {
+                super.updateItem(item, empty);
 
-                return new SimpleStringProperty(strVal);
+                sub.unsubscribe();
+                sub = Subscription.EMPTY;
+
+                if (empty || item == null)
+                    setText(null);
+
+                else {
+                    Task task = getTableRow().getItem();
+                    setDateTimeText(task);
+                    sub = task.dueTime().subscribe(dueTime -> setDateTimeText(task)).and(sub);
+                    sub = task.interval().subscribe(interval -> setDateTimeText(task)).and(sub);
+                }
             }
-            else {
-                return  new SimpleStringProperty("");
-            }
-        });
-        taskRepeatCol.setCellValueFactory(task -> {
-            switch (task.getValue().getInterval()) {
-                case TwigInterval.DailyInterval dailyTask -> {
-                    return new SimpleStringProperty("Daily");
+
+            private void setDateTimeText(Task task) {
+                if (task.getInterval().nextDue() == null) {
+                    setText(null);
                 }
-                case TwigInterval.WeeklyInterval weeklyTask -> {
-                    StringBuilder dayString = new StringBuilder();
-                    for (DayOfWeek day : weeklyTask.daysOfWeek()) {
-                        dayString.append(dayOfWeekShorthand[day.ordinal()]).append(" ");
+                else {
+                    String strVal = dateFormat.format(task.getInterval().nextDue());
+
+                    if (task.getDueTime() != null) {
+                        strVal += " " + timeFormat.format(task.getDueTime());
                     }
-                    dayString.deleteCharAt(dayString.length() - 1);
-                    return new SimpleStringProperty(dayString.toString());
-                }
-                case TwigInterval.MonthlyInterval monthlyTask -> {
-                    StringBuilder monthString = new StringBuilder();
-                    for (int day : monthlyTask.getDueDays()) {
-                        monthString.append(day).append(", ");
-                    }
-                    monthString.delete(monthString.length() - 2, monthString.length());
-                    return new SimpleStringProperty(monthString.toString());
-                }
-                case null, default -> {
-                    return new SimpleStringProperty("");
+
+                    setText(strVal);
                 }
             }
         });
+        taskDateTimeCol.setCellValueFactory(cell -> cell.getValue().interval());
+        taskRepeatCol.setCellFactory(column -> new TableCell<>() {
+            private Subscription itemSubs = Subscription.EMPTY;
+
+            @Override
+            protected void updateItem(TaskInterval item, boolean empty) {
+                super.updateItem(item, empty);
+
+                itemSubs.unsubscribe();
+                itemSubs = Subscription.EMPTY;
+
+                if (empty || item == null)
+                    setText(null);
+
+                else {
+                    switch (item) {
+                        case TaskInterval.SingleDateInterval single -> {
+                            setText(dateFormat.format(single.getDueDate()));
+                            itemSubs = single.dueDateProperty().subscribe(dueDate -> setText(dateFormat.format(dueDate))).and(itemSubs);
+                        }
+                        case TaskInterval.DayInterval day -> {
+                            setDayText(day);
+                            itemSubs = day.intervalProperty().subscribe(newValue -> setDayText(day)).and(itemSubs);
+                            itemSubs = day.repeatFromLastDoneProperty().subscribe(newValue -> setDayText(day)).and(itemSubs);
+                        }
+                        case TaskInterval.WeekInterval week -> {
+                            setWeekText(week);
+                            itemSubs = week.dayOfWeekMapProperty().subscribe(newValue -> setWeekText(week)).and(itemSubs);
+                        }
+                        case TaskInterval.MonthInterval month -> {
+                            setMonthText(month);
+                            ListChangeListener<Integer> listener = change -> setMonthText(month);
+                            month.getDatesObservable().addListener(listener);
+                            itemSubs = itemSubs.and(() -> month.getDatesObservable().removeListener(listener));
+                        }
+                        default -> setText(null);
+                    }
+                }
+            }
+
+            private void setDayText(TaskInterval.DayInterval day) {
+                if (day.isRepeatFromLastDone())
+                    setText("Every " + day.getInterval() + " days after done");
+                else
+                    setText("Every " + day.getInterval() + " days");
+            }
+
+            private void setWeekText(TaskInterval.WeekInterval week) {
+                StringBuilder retVal = new StringBuilder("weekly:");
+                for (DayOfWeek day : DayOfWeek.values()) {
+                    if (week.isDueOn(day)) {
+                        retVal.append(" ").append(dayOfWeekShorthand[day.ordinal()]);
+                    }
+                }
+                setText(retVal.toString());
+            }
+
+            private void setMonthText(TaskInterval.MonthInterval month) {
+                if (month.getDates().isEmpty()) {
+                    setText(null);
+                } else {
+                    StringBuilder dateStr = new StringBuilder();
+
+                    for (Integer date : month.getDates()) {
+                        dateStr.append(date);
+                        dateStr.append(", ");
+                    }
+
+                    setText(dateStr.substring(0, dateStr.length() - 2));
+                }
+            }
+        });
+        taskRepeatCol.setCellValueFactory(cell -> cell.getValue().interval());
         taskTableView.setRowFactory(table -> {
             TableRow<Task> row = new TableRow<>();
             row.setOnMouseClicked(event -> {
                 if (!row.isEmpty() && row.getIndex() != -1) {
                     if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2) {
-                        TaskDialog dialog = new TaskDialog(stage, row.getItem());
-                        Optional<TaskDialog.TaskReturn> taskResult = dialog.showAndWait();
-                        taskResult.ifPresent(task -> {
-                            int index = taskTableView.getSelectionModel().getSelectedIndex();
-
-                            if (task.type().equals(ButtonBar.ButtonData.OTHER)) {
-                                Alert confirmDialog = createAlert(Alert.AlertType.WARNING, "Delete Task", "Do you want to delete this task?", "This cannot be undone.");
-
-                                confirmDialog.showAndWait().ifPresent(result -> {
-                                    if (result == ButtonType.YES) {
-                                        taskTableView.getItems().remove(index);
-                                        taskTableView.refresh();
-                                    }
-                                });
-                            }
-                            else if (task.task() != null){
-                                taskTableView.getItems().set(index, task.task());
-                                taskTableView.refresh();
-                            }
-                        });
+                        Task task = table.getItems().get(row.getIndex());
+                        Node content = new TaskContent(task);
+                        PopOver popOver = new PopOver(content);
+                        popOver.titleProperty().bind(task.name());
+                        popOver.setArrowLocation(PopOver.ArrowLocation.TOP_LEFT);
+                        popOver.getRoot().getStylesheets().clear();
+                        popOver.show(row);
                     }
                 }
             });
@@ -403,20 +458,28 @@ public class TaskTwigController {
                                 }
                             });
 
-                            MenuItem deleteItem = new MenuItem("Delete");
                             MenuItem addItem = new MenuItem("Add");
+                            MenuItem clearDoneItem = new MenuItem("Clear Checked");
+                            MenuItem deleteItem = new MenuItem("Delete");
 
-                            deleteItem.setOnAction(event -> {
-                                getTreeItem().getParent().getChildren().remove(getTreeItem());
-                                twig.twigLists().remove(list);
-                            });
                             addItem.setOnAction(event -> {
                                 TextInputDialog dialog = new TextInputDialog();
                                 dialog.setTitle("Add item to " + list.getName());
                                 dialog.setHeaderText("Add item to " + list.getName());
                                 dialog.showAndWait().ifPresent(result -> list.items().add(new TwigListItem(result)));
                             });
-                            contextMenu.getItems().addAll(deleteItem, addItem);
+                            clearDoneItem.setOnAction(event -> {
+                                for (int i = 0; i < list.items().size(); i++) {
+                                    if (list.items().get(i).isDone()) {
+                                        list.items().remove(i--);
+                                    }
+                                }
+                            });
+                            deleteItem.setOnAction(event -> {
+                                getTreeItem().getParent().getChildren().remove(getTreeItem());
+                                twig.twigLists().remove(list);
+                            });
+                            contextMenu.getItems().addAll(addItem, clearDoneItem, deleteItem);
                         }
                         case TwigListItem listItem -> {
                             Label label = new Label();
@@ -474,17 +537,17 @@ public class TaskTwigController {
         routineTable.setRowFactory(table -> {
             TableRow<Routine> row = new TableRow<>();
             row.setOnMouseClicked(event -> {
-               if (!row.isEmpty() && row.getIndex() != -1) {
-                   if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2) {
-                       Routine routine = table.getItems().get(row.getIndex());
-                       Node content = new RoutineContent(routine);
-                       PopOver popOver = new PopOver(content);
-                       popOver.titleProperty().bind(routine.name());
-                       popOver.setArrowLocation(PopOver.ArrowLocation.TOP_LEFT);
-                       popOver.getRoot().getStylesheets().clear();
-                       popOver.show(row);
-                   }
-               }
+                if (!row.isEmpty() && row.getIndex() != -1) {
+                    if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2) {
+                        Routine routine = table.getItems().get(row.getIndex());
+                        Node content = new RoutineContent(routine);
+                        PopOver popOver = new PopOver(content);
+                        popOver.titleProperty().bind(routine.name());
+                        popOver.setArrowLocation(PopOver.ArrowLocation.TOP_LEFT);
+                        popOver.getRoot().getStylesheets().clear();
+                        popOver.show(row);
+                    }
+                }
             });
 
             row.setOnDragDetected(event -> {
@@ -550,40 +613,49 @@ public class TaskTwigController {
         routineIntervalCol.setCellValueFactory(routine -> routine.getValue().interval());
         routineDueCol.setCellValueFactory(routine -> routine.getValue().dueTime());
         routineIntervalCol.setCellFactory(col -> new TableCell<>() {
-            private Subscription weekDaySub = Subscription.EMPTY;
+            private Subscription itemSubs = Subscription.EMPTY;
 
             @Override
-            protected void updateItem(TwigInterval item, boolean empty) {
+            protected void updateItem(RoutineInterval item, boolean empty) {
                 super.updateItem(item, empty);
 
-                weekDaySub.unsubscribe();
-                weekDaySub = Subscription.EMPTY;
+                itemSubs.unsubscribe();
+                itemSubs = Subscription.EMPTY;
 
                 if (item == null || empty) {
                     setText(null);
                 }
                 else {
                     switch (item) {
-                        case TwigInterval.DailyInterval daily -> setText("Daily");
-                        case TwigInterval.WeeklyInterval week -> {
+                        case RoutineInterval.DailyInterval daily -> setText("Daily");
+                        case RoutineInterval.DayInterval day -> {
+                            itemSubs = day.intervalProperty().subscribe(newValue -> setDayText(day)).and(itemSubs);
+                            itemSubs = day.repeatFromLastDoneProperty().subscribe(newValue -> setDayText(day)).and(itemSubs);
+                        }
+                        case RoutineInterval.WeekInterval week -> {
                             setWeekText(week);
-                            for (BooleanProperty prop : week.dayOfWeekMapProperty()) {
-                                weekDaySub = weekDaySub.and(prop.subscribe(newValue -> setWeekText(week)));
-                            }
+                            itemSubs = week.dayOfWeekBitmapProperty().subscribe(newValue -> setWeekText(week)).and(itemSubs);
                         }
                         default -> setText(null);
                     }
                 }
             }
 
-            private void setWeekText(TwigInterval.WeeklyInterval week) {
+            private void setWeekText(RoutineInterval.WeekInterval week) {
                 StringBuilder retVal = new StringBuilder("weekly:");
                 for (DayOfWeek day : DayOfWeek.values()) {
-                    if (week.getDayOfWeekMap()[day.ordinal()]) {
+                    if (week.isIntervalOn(day)) {
                         retVal.append(" ").append(dayOfWeekShorthand[day.ordinal()]);
                     }
                 }
                 setText(retVal.toString());
+            }
+
+            private void setDayText(RoutineInterval.DayInterval day) {
+                if (day.isRepeatFromLastDone())
+                    setText("Every " + day.getInterval() + " days after done");
+                else
+                    setText("Every " + day.getInterval() + " days");
             }
         });
         routineDueCol.setCellFactory(column -> new timeTableCell<>(timeFormat) {});
@@ -624,11 +696,6 @@ public class TaskTwigController {
         twig.dbxClient().subscribe(_ -> updateDbxAccountState());
         updateDbxAccountState();
 
-        settingsSheet.getItems().addAll(
-                new LabelItem(twig.dbxName(), "Dropbox Account", "Dropbox", ""),
-                new ButtonItem(dbxButtonState, "Connect Dropbox Account", "Dropbox", "")
-        );
-
         attachTwigData();
 
     }
@@ -644,7 +711,7 @@ public class TaskTwigController {
     public void closeTwig() {
         detachTwigData();
         twig.saveToFiles();
-        twig.dbxSync();
+        twig.dbxSync(this::handleDataConflict);
     }
 
     private void attachTwigData() {
@@ -655,7 +722,7 @@ public class TaskTwigController {
         todayRoutineListView.setItems(twig.routineList().filtered(item -> item.getInterval().isToday()));
         subscriptions = subscriptions.and(() -> todayRoutineListView.setItems(null));
 
-        todayTaskListView.setItems(twig.taskList().filtered(item -> item.getInterval().isToday()));
+        todayTaskListView.setItems(twig.taskList().filtered(item -> item.getInterval().inProgress()));
         subscriptions = subscriptions.and(() -> todayTaskListView.setItems(null));
 
         subscriptions = twig.sleepStart().subscribe(newValue -> setSleepStatusLabel(newValue)).and(subscriptions);
@@ -672,14 +739,15 @@ public class TaskTwigController {
         workoutTableView.setItems(twig.workoutRecords());
         subscriptions = subscriptions.and(() -> workoutTableView.setItems(null));
 
-        taskTableView.setItems(twig.taskList().sorted((task1, task2) -> {
-            if (task1.isDone() ^ task2.isDone()) {
-                return task1.isDone() ? 1 : -1;
-            }
-            else {
-                return task1.getName().compareTo(task2.getName());
-            }
-        }));
+//        taskTableView.setItems(twig.taskList().sorted((task1, task2) -> {
+//            if (task1.isDone() ^ task2.isDone()) {
+//                return task1.isDone() ? 1 : -1;
+//            }
+//            else {
+//                return task1.getName().compareTo(task2.getName());
+//            }
+//        }));
+        taskTableView.setItems(twig.taskList());
         subscriptions = subscriptions.and(() -> taskTableView.setItems(null));
 
         populateTwigLists();
@@ -945,12 +1013,8 @@ public class TaskTwigController {
     @FXML
     protected void onNewTaskButtonClick(ActionEvent event) {
         TaskDialog dialog = new TaskDialog(stage);
-        Optional<TaskDialog.TaskReturn> taskResult = dialog.showAndWait();
-        taskResult.ifPresent(task -> {
-            if (task.task() != null) {
-                taskTableView.getItems().add(task.task());
-            }
-        });
+        Optional<Task> taskResult = dialog.showAndWait();
+        taskResult.ifPresent(task -> taskTableView.getItems().add(task));
     }
 
     private Alert createAlert(Alert.AlertType type, String title, String header, String content) {
@@ -974,14 +1038,23 @@ public class TaskTwigController {
 
     private void updateDbxAccountState() {
         if (twig.dbxClient().getValue() == null) {
-            dbxButtonState.text().set("Connect Account");
             syncButton.setDisable(true);
             syncLabel.setText("No Dropbox account connected");
+
+            settingsDbxName.setText("No active account");
+            settingsDbxButton.setText("Connect Account");
         }
         else {
-            dbxButtonState.text().set("Logout");
             syncButton.setDisable(false);
             syncLabel.setText("Not yet synced");
+
+            settingsDbxButton.setText("Logout");
+            try {
+                settingsDbxName.setText(twig.getDbxAccountName());
+            }
+            catch (DbxException e) {
+                System.err.println("Failed to render dbx account name: " + e.getMessage());
+            }
         }
     }
 
@@ -1047,6 +1120,29 @@ public class TaskTwigController {
         }
     }
 
+    private TaskTwig.FileAction handleDataConflict(TaskTwig.CommitData localCommit, TaskTwig.CommitData remoteCommit) {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setHeaderText("Conflicting data between local and remote!");
+        alert.setContentText("Would you like to keep the local data or the remote (Dropbox) data?");
+        alert.initOwner(stage);
+
+        ButtonType remoteButton = new ButtonType("Remote", ButtonBar.ButtonData.NO);
+        ButtonType localButton = new ButtonType("Local", ButtonBar.ButtonData.YES);
+        alert.getButtonTypes().setAll(localButton, remoteButton, ButtonType.CANCEL);
+
+        Optional<ButtonType> result = alert.showAndWait();
+        if (result.isPresent()) {
+            if (result.get() == remoteButton)
+                return TaskTwig.FileAction.UPLOAD;
+            else if (result.get() == localButton)
+                return TaskTwig.FileAction.DOWNLOAD;
+            else
+                return TaskTwig.FileAction.NONE;
+        }
+
+        return TaskTwig.FileAction.NONE;
+    }
+
     @FXML
     protected void onSyncButton() {
         if (twig.dbxClient().getValue() != null) {
@@ -1057,7 +1153,7 @@ public class TaskTwigController {
                 twig.saveToFileFX();
                 
                 Platform.runLater(() -> syncLabel.setText("Comparing data with Dropbox"));
-                var commitDiff = twig.compareCommitToDbx();
+                var commitDiff = twig.compareCommitToDbx(this::handleDataConflict);
 
                 String labelText;
                 switch(commitDiff.action()) {

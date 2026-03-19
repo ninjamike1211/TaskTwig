@@ -19,7 +19,7 @@ import ninjamica.tasktwig.Exercise;
 import ninjamica.tasktwig.TaskTwig;
 
 import java.io.IOException;
-import java.util.HashMap;
+import java.util.TreeMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -104,7 +104,7 @@ public class WorkoutDialog extends Dialog<Map<Exercise, Integer>> {
                     return null;
                 }
 
-                Map<Exercise, Integer> exercises = new HashMap<>();
+                Map<Exercise, Integer> exercises = new TreeMap<>();
                 for (ExerciseHolder exerciseHolder : selectedExercises) {
                     exercises.put(exerciseHolder.exercise, exerciseHolder.count.getValue());
                 }

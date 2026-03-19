@@ -7,132 +7,130 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.control.*;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
+import javafx.util.Subscription;
 import ninjamica.tasktwig.Routine;
-import ninjamica.tasktwig.TwigInterval;
+import ninjamica.tasktwig.RoutineInterval.DailyInterval;
+import ninjamica.tasktwig.RoutineInterval.DayInterval;
+import ninjamica.tasktwig.RoutineInterval.WeekInterval;
 
-import java.io.IOException;
+import java.time.DayOfWeek;
 import java.time.LocalTime;
 
 public class RoutineContent extends AnchorPane {
-    @FXML
-    private VBox contentVbox;
-    @FXML
-    private AnchorPane dayOfWeekPane;
+    @FXML private VBox contentVBox;
+    @FXML private AnchorPane dayOfWeekPane;
+    @FXML private AnchorPane dayIntervalPane;
 
-    @FXML
-    private TextField nameTextField;
-    @FXML
-    private ChoiceBox<String> typeChoiceBox;
-    @FXML
-    private ToggleButton dayMButton;
-    @FXML
-    private ToggleButton dayTButton;
-    @FXML
-    private ToggleButton dayWButton;
-    @FXML
-    private ToggleButton dayThButton;
-    @FXML
-    private ToggleButton dayFButton;
-    @FXML
-    private ToggleButton daySaButton;
-    @FXML
-    private ToggleButton daySuButton;
-    @FXML
-    private CheckBox dueTimeCheckbox;
-    @FXML
-    private Spinner<LocalTime> dueTimeSpinner;
+    @FXML private TextField nameTextField;
+    @FXML private ChoiceBox<String> typeChoiceBox;
+    @FXML private Spinner<Integer> dayIntervalSpinner;
+    @FXML private CheckBox dayIntervalRepeatCheckbox;
+    @FXML private ToggleButton dayMButton;
+    @FXML private ToggleButton dayTButton;
+    @FXML private ToggleButton dayWButton;
+    @FXML private ToggleButton dayThButton;
+    @FXML private ToggleButton dayFButton;
+    @FXML private ToggleButton daySaButton;
+    @FXML private ToggleButton daySuButton;
+    @FXML private Spinner<LocalTime> dueTimeSpinner;
 
-    private final static ObservableList<String> types = FXCollections.observableArrayList("Daily", "Weekly");
+    private final static ObservableList<String> types = FXCollections.observableArrayList("Daily", "Day Interval", "Week Interval");
+    private Subscription typeSubs = Subscription.EMPTY;
+    final Routine routine;
+
+    public RoutineContent() {
+        this(new Routine("", null, new DailyInterval()));
+    }
 
     public RoutineContent(Routine routine) {
+        this.routine = routine;
         try {
             FXMLLoader loader = new FXMLLoader();
             loader.setLocation(getClass().getResource("fxml/routine-dialog.fxml"));
             loader.setController(this);
-
             getChildren().add(loader.load());
-
-            nameTextField.textProperty().bindBidirectional(routine.name());
-            typeChoiceBox.setItems(types);
-            typeChoiceBox.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> updateType(routine, oldValue, newValue));
-
-            switch (routine.getInterval()) {
-                case TwigInterval.DailyInterval daily -> {
-                    typeChoiceBox.getSelectionModel().select(0);
-                }
-                case TwigInterval.WeeklyInterval week -> {
-                    typeChoiceBox.getSelectionModel().select(1);
-                    dayMButton.selectedProperty().bindBidirectional(week.dayOfWeekProperty(0));
-                    dayTButton.selectedProperty().bindBidirectional(week.dayOfWeekProperty(1));
-                    dayWButton.selectedProperty().bindBidirectional(week.dayOfWeekProperty(2));
-                    dayThButton.selectedProperty().bindBidirectional(week.dayOfWeekProperty(3));
-                    dayFButton.selectedProperty().bindBidirectional(week.dayOfWeekProperty(4));
-                    daySaButton.selectedProperty().bindBidirectional(week.dayOfWeekProperty(5));
-                    daySuButton.selectedProperty().bindBidirectional(week.dayOfWeekProperty(6));
-                }
-                default -> {}
-            }
-
-            dueTimeSpinner.disableProperty().bindBidirectional(dueTimeCheckbox.selectedProperty());
-
-
-            if (routine.getDueTime() == null) {
-                dueTimeCheckbox.setSelected(true);
-                new TimeSpinner(dueTimeSpinner);
-            }
-            else {
-                dueTimeCheckbox.setSelected(false);
-                new TimeSpinner(dueTimeSpinner, routine.getDueTime());
-            }
-
-            dueTimeCheckbox.selectedProperty().addListener((observable, oldValue, newValue) -> {
-               if (newValue) {
-                   routine.dueTime().set(null);
-               }
-               else {
-                   routine.dueTime().set(dueTimeSpinner.getValue());
-               }
-            });
-            dueTimeSpinner.valueProperty().addListener(
-                    (observable, oldValue, newValue) -> routine.dueTime().set(newValue));
-
         }
-        catch (IOException e) {
+        catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    private void updateType(Routine routine, String oldValue, String newValue) {
+    @FXML
+    protected void initialize() {
+        nameTextField.textProperty().bindBidirectional(routine.name());
+        typeChoiceBox.setItems(types);
+        dayIntervalSpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, Integer.MAX_VALUE, 1));
 
+        String routineType;
+        switch (routine.getInterval()) {
+            case DailyInterval daily -> routineType = "Daily";
+            case DayInterval day -> routineType = "Day Interval";
+            case WeekInterval week -> routineType = "Week Interval";
+            default -> routineType = null;
+        }
+        typeChoiceBox.setValue(routineType);
+        updateType(null,  routineType, false);
+
+        new TimeSpinner(dueTimeSpinner, routine.getDueTime());
+        dueTimeSpinner.valueProperty().subscribe(newValue -> routine.dueTime().set(newValue));
+
+        typeChoiceBox.getSelectionModel().selectedItemProperty().subscribe((oldItem, newItem) -> updateType(oldItem, newItem, true));
+    }
+
+    private void updateType(String oldValue, String newValue, boolean overrideInterval) {
         if (oldValue == null || !oldValue.equals(newValue)) {
-            if (typeChoiceBox.getValue().equals("Daily")) {
-                contentVbox.getChildren().remove(dayOfWeekPane);
 
-                if ("Weekly".equals(oldValue)) {
-                    dayMButton.selectedProperty().unbindBidirectional(((TwigInterval.WeeklyInterval) routine.getInterval()).dayOfWeekProperty(0));
-                    dayTButton.selectedProperty().unbindBidirectional(((TwigInterval.WeeklyInterval) routine.getInterval()).dayOfWeekProperty(1));
-                    dayWButton.selectedProperty().unbindBidirectional(((TwigInterval.WeeklyInterval) routine.getInterval()).dayOfWeekProperty(2));
-                    dayThButton.selectedProperty().unbindBidirectional(((TwigInterval.WeeklyInterval) routine.getInterval()).dayOfWeekProperty(3));
-                    dayFButton.selectedProperty().unbindBidirectional(((TwigInterval.WeeklyInterval) routine.getInterval()).dayOfWeekProperty(4));
-                    daySaButton.selectedProperty().unbindBidirectional(((TwigInterval.WeeklyInterval) routine.getInterval()).dayOfWeekProperty(5));
-                    daySuButton.selectedProperty().unbindBidirectional(((TwigInterval.WeeklyInterval) routine.getInterval()).dayOfWeekProperty(6));
+            typeSubs.unsubscribe();
+            typeSubs = Subscription.EMPTY;
+
+            contentVBox.getChildren().removeAll(dayIntervalPane, dayOfWeekPane);
+
+            switch (newValue) {
+                case "Daily" -> {
+                    if (overrideInterval)
+                        routine.interval().set(new DailyInterval());
                 }
+                case "Day Interval" -> {
+                    contentVBox.getChildren().add(2, dayIntervalPane);
 
-                routine.interval().set(new TwigInterval.DailyInterval());
-            }
-            else {
-                if (!contentVbox.getChildren().contains(dayOfWeekPane)) {
-                    contentVbox.getChildren().add(2, dayOfWeekPane);
-                    routine.interval().set(new TwigInterval.WeeklyInterval());
+                    if (overrideInterval) {
+                        routine.interval().set(new DayInterval(1, false));
+                    }
 
-                    dayMButton.selectedProperty().bindBidirectional(((TwigInterval.WeeklyInterval)routine.getInterval()).dayOfWeekProperty(0));
-                    dayTButton.selectedProperty().bindBidirectional(((TwigInterval.WeeklyInterval)routine.getInterval()).dayOfWeekProperty(1));
-                    dayWButton.selectedProperty().bindBidirectional(((TwigInterval.WeeklyInterval)routine.getInterval()).dayOfWeekProperty(2));
-                    dayThButton.selectedProperty().bindBidirectional(((TwigInterval.WeeklyInterval)routine.getInterval()).dayOfWeekProperty(3));
-                    dayFButton.selectedProperty().bindBidirectional(((TwigInterval.WeeklyInterval)routine.getInterval()).dayOfWeekProperty(4));
-                    daySaButton.selectedProperty().bindBidirectional(((TwigInterval.WeeklyInterval)routine.getInterval()).dayOfWeekProperty(5));
-                    daySuButton.selectedProperty().bindBidirectional(((TwigInterval.WeeklyInterval)routine.getInterval()).dayOfWeekProperty(6));
+                    DayInterval interval = (DayInterval) routine.getInterval();
+
+                    dayIntervalSpinner.getValueFactory().setValue(interval.getInterval());
+                    dayIntervalRepeatCheckbox.setSelected(interval.isRepeatFromLastDone());
+
+                    typeSubs = dayIntervalSpinner.valueProperty().subscribe(value -> interval.intervalProperty().set(value)).and(typeSubs);
+                    typeSubs = dayIntervalRepeatCheckbox.selectedProperty().subscribe(value -> interval.repeatFromLastDoneProperty().set(value)).and(typeSubs);
                 }
+                case "Week Interval" -> {
+                    contentVBox.getChildren().add(2, dayOfWeekPane);
+
+                    if (overrideInterval) {
+                        routine.interval().set(new WeekInterval());
+                    }
+
+                    WeekInterval interval = (WeekInterval) routine.getInterval();
+
+                    dayMButton.setSelected(interval.isIntervalOn(DayOfWeek.MONDAY));
+                    dayTButton.setSelected(interval.isIntervalOn(DayOfWeek.TUESDAY));
+                    dayWButton.setSelected(interval.isIntervalOn(DayOfWeek.WEDNESDAY));
+                    dayThButton.setSelected(interval.isIntervalOn(DayOfWeek.THURSDAY));
+                    dayFButton.setSelected(interval.isIntervalOn(DayOfWeek.FRIDAY));
+                    daySaButton.setSelected(interval.isIntervalOn(DayOfWeek.SATURDAY));
+                    daySuButton.setSelected(interval.isIntervalOn(DayOfWeek.SUNDAY));
+
+                    dayMButton.setOnAction(event -> interval.setOnDay(DayOfWeek.MONDAY, dayMButton.isSelected()));
+                    dayTButton.setOnAction(event -> interval.setOnDay(DayOfWeek.TUESDAY, dayTButton.isSelected()));
+                    dayWButton.setOnAction(event -> interval.setOnDay(DayOfWeek.WEDNESDAY, dayWButton.isSelected()));
+                    dayThButton.setOnAction(event -> interval.setOnDay(DayOfWeek.THURSDAY, dayThButton.isSelected()));
+                    dayFButton.setOnAction(event -> interval.setOnDay(DayOfWeek.FRIDAY, dayFButton.isSelected()));
+                    daySaButton.setOnAction(event -> interval.setOnDay(DayOfWeek.SATURDAY, daySaButton.isSelected()));
+                    daySuButton.setOnAction(event -> interval.setOnDay(DayOfWeek.SUNDAY, daySuButton.isSelected()));
+                }
+                default -> {}
             }
         }
     }

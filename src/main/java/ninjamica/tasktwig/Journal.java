@@ -38,13 +38,12 @@ public record Journal(StringProperty text,
              FXCollections.observableArrayList(tasks));
     }
 
-    public Journal(TaskTwig.TwigJsonNode twigNode) {
-        JsonNode node = twigNode.node();
+    public Journal(JsonNode node, int version) {
         String text;
         List<String> routines = new ArrayList<>();
         List<String> tasks = new ArrayList<>();
 
-        if (twigNode.version() == 2) {
+        if (version == 2) {
             text = node.get("text").asString();
 
             for (JsonNode routineNode : node.get("routines")) {
@@ -55,11 +54,11 @@ public record Journal(StringProperty text,
                 tasks.add(taskNode.asString());
             }
         }
-        else if(twigNode.version() == 1) {
+        else if(version == 1) {
             text = node.get("text").asString();
         }
         else {
-            throw new TaskTwig.JsonVersionException("Unsupported Journal version: " + twigNode.version());
+            throw new TaskTwig.JsonVersionException("Unsupported Journal version: " + version);
         }
 
         this(text, routines, tasks);
@@ -76,7 +75,7 @@ public record Journal(StringProperty text,
 
     @JsonGetter("tasks")
     public List<String> getTasksJson() {
-        if (TaskTwig.useFxThread())
+        if (TaskTwig.notFxThread())
             return TaskTwig.callWithFXSafety(() -> new ArrayList<>(completedTasks));
         else
             return completedTasks;
@@ -84,7 +83,7 @@ public record Journal(StringProperty text,
 
     @JsonGetter("routines")
     public List<String> getRoutinesJson() {
-        if (TaskTwig.useFxThread())
+        if (TaskTwig.notFxThread())
             return TaskTwig.callWithFXSafety(() -> new ArrayList<>(completedRoutines));
         else
             return completedRoutines;

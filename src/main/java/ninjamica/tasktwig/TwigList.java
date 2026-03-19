@@ -58,13 +58,12 @@ public record TwigList(StringProperty name, ObservableList<TwigListItem> items, 
         this(new SimpleStringProperty(name), FXCollections.observableArrayList(), new SimpleBooleanProperty(true));
     }
 
-    public TwigList(TaskTwig.TwigJsonNode twigNode) {
-        JsonNode node = twigNode.node();
+    public TwigList(JsonNode node, int version) {
         String name;
         List<TwigListItem> items = new ArrayList<>();
         boolean expanded;
 
-        if (twigNode.version() == 1) {
+        if (version == 1) {
             name = node.get("name").asString();
 
             for (JsonNode item : node.get("items")) {
@@ -74,7 +73,7 @@ public record TwigList(StringProperty name, ObservableList<TwigListItem> items, 
             expanded = node.get("expanded").asBoolean();
         }
         else {
-            throw new TaskTwig.JsonVersionException("Unsupported List version: " + twigNode.version());
+            throw new TaskTwig.JsonVersionException("Unsupported List version: " + version);
         }
 
         this(name, items, expanded);
@@ -87,7 +86,7 @@ public record TwigList(StringProperty name, ObservableList<TwigListItem> items, 
 
     @JsonGetter
     public List<TwigListItem> getItemsJson() {
-        if (TaskTwig.useFxThread())
+        if (TaskTwig.notFxThread())
             return TaskTwig.callWithFXSafety(() -> new ArrayList<>(items));
         else
             return items;

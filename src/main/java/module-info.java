@@ -11,12 +11,11 @@ module ninjamica.tasktwig.tasktwig {
     requires java.xml;
     requires transitive dropbox.core.sdk;
     requires java.desktop;
+    requires jdk.jdi;
 
 
     opens ninjamica.tasktwig to javafx.fxml;
     exports ninjamica.tasktwig;
     exports ninjamica.tasktwig.ui;
     opens ninjamica.tasktwig.ui to javafx.fxml;
-    exports ninjamica.tasktwig.ui.PropertySheetItems;
-    opens ninjamica.tasktwig.ui.PropertySheetItems to javafx.fxml;
 }

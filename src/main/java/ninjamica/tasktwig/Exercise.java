@@ -1,11 +1,12 @@
 package ninjamica.tasktwig;
 
+import org.jetbrains.annotations.NotNull;
 import tools.jackson.databind.JsonNode;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 
-public record Exercise(String name, ExerciseUnit unit) {
+public record Exercise(String name, ExerciseUnit unit) implements Comparable<Exercise> {
 
     public enum ExerciseUnit {
         COUNT(""),
@@ -24,13 +25,23 @@ public record Exercise(String name, ExerciseUnit unit) {
         this(split[1], ExerciseUnit.valueOf(split[3]));
     }
 
-    public Exercise(TaskTwig.TwigJsonNode twigNode) {
-        JsonNode node = twigNode.node();
+    public Exercise(JsonNode node, int version) {
         this(node.get("name").asString(), ExerciseUnit.valueOf(node.get("unit").asString()));
     }
 
     public void hashContents(MessageDigest digest) {
         digest.update(name().getBytes(StandardCharsets.UTF_8));
         digest.update(unit().displayName.getBytes(StandardCharsets.UTF_8));
+    }
+
+    @Override
+    public int compareTo(@NotNull Exercise o) {
+        int compare = this.name().compareTo(o.name());
+
+        if (compare == 0) {
+            compare = this.unit().displayName.compareTo(o.unit().displayName);
+        }
+
+        return compare;
     }
 }

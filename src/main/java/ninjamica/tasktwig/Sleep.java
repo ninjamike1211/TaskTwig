@@ -21,16 +21,15 @@ public record Sleep(@JsonGetter("start") LocalDateTime start, @JsonGetter("end")
         this.end = end;
     }
 
-    public Sleep(TaskTwig.TwigJsonNode twigNode) {
+    public Sleep(JsonNode node, int version) {
         LocalDateTime start, end;
 
-        JsonNode node = twigNode.node();
-        if (twigNode.version() == 1) {
+        if (version == 1) {
             start = LocalDateTime.parse(node.get("start").asString());
             end = LocalDateTime.parse(node.get("end").asString());
         }
         else {
-            throw new TaskTwig.JsonVersionException("Unsupported Sleep version: " + twigNode.version());
+            throw new TaskTwig.JsonVersionException("Unsupported Sleep version: " + version);
         }
 
         this(start, end);

@@ -9,8 +9,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 
 public record Workout(@JsonGetter("start") LocalDateTime start,
                       @JsonGetter("end") LocalDateTime end,
@@ -26,12 +26,11 @@ public record Workout(@JsonGetter("start") LocalDateTime start,
         this.exercises = exercises;
     }
 
-    public Workout(TaskTwig.TwigJsonNode twigNode) {
-        JsonNode node = twigNode.node();
+    public Workout(JsonNode node, int version) {
         LocalDateTime start, end;
-        Map<Exercise, Integer> exercises = new HashMap<>();
+        Map<Exercise, Integer> exercises = new TreeMap<>();
 
-        if (twigNode.version() == 1) {
+        if (version == 1) {
             start = LocalDateTime.parse(node.get("start").asString());
             end = LocalDateTime.parse(node.get("end").asString());
 
@@ -41,7 +40,7 @@ public record Workout(@JsonGetter("start") LocalDateTime start,
             }
         }
         else {
-            throw new TaskTwig.JsonVersionException("Unsupported Workout version: " + twigNode.version());
+            throw new TaskTwig.JsonVersionException("Unsupported Workout version: " + version);
         }
 
         this(start, end, exercises);

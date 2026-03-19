@@ -28,10 +28,9 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 public class TaskTwig implements Serializable {
@@ -46,13 +45,20 @@ public class TaskTwig implements Serializable {
             super(message);
         }
     }
-    public record TwigJsonNode(JsonNode node, int version) {}
+
+    @FunctionalInterface
+    interface TwigJsonConstructor<T> {
+        T construct(JsonNode node, int version);
+    }
 
     private static final String DBX_API_KEY = "ul8ujplgavm586q";
+    private static final int CONFIG_VERSION = 1;
+
     private static final File DATA_DIR = new File("data");
     private static final File DBX_DIR = new File(DATA_DIR.getPath() + "/dbx");
     private static final File DBX_CRED_FILE = new File(DBX_DIR.getPath() + "/credential.app");
     private static final File COMMIT_FILE = new File(DATA_DIR.getPath()+"/commit.json");
+    private static final File CONFIG_FILE = new File(DATA_DIR.getPath()+"/config.json");
     private enum DataFile {
         SLEEP (new File(DATA_DIR.getPath()+"/sleep.json")),
         WORKOUT (new File(DATA_DIR.getPath()+"/workout.json")),
@@ -68,9 +74,9 @@ public class TaskTwig implements Serializable {
     }
 
     private static TaskTwig instance;
-    private static LocalTime dayStart = LocalTime.of(5,00);
-    private static LocalTime nightStart = LocalTime.of(18,00);
-    private static boolean useFXThread = false;
+    private static boolean notFXThread = false;
+
+    private final ObjectMapper mapper = new ObjectMapper();
 
     private ObservableMap<LocalDate, Sleep> sleepRecords;
     private ObservableList<Workout> workoutRecords;
@@ -81,35 +87,24 @@ public class TaskTwig implements Serializable {
     private ObservableMap<LocalDate, Journal> journalMap;
     private final ObjectProperty<LocalDateTime> sleepStart = new SimpleObjectProperty<>();
     private final ObjectProperty<LocalDateTime> workoutStart = new SimpleObjectProperty<>();
-    private final ObjectMapper mapper = new ObjectMapper();
+    private ObjectProperty<LocalTime> dayStart = new SimpleObjectProperty<>(LocalTime.of(5,00));
+    private ObjectProperty<LocalTime> nightStart = new SimpleObjectProperty<>(LocalTime.of(18,00));
 
     private DbxCredential dbxCredential;
     private final ObjectProperty<DbxClientV2> dbxClient = new SimpleObjectProperty<>();
-    private final StringProperty dbxName = new SimpleStringProperty("No active account");
     private DbxPKCEWebAuth currentDbxAuthAttempt;
+    private String lastSyncedHash;
 
 
     public TaskTwig() {
-        dbxClient.addListener((ob, o, n) -> {
-            try {
-                if (n == null) {
-                    dbxName.set("No active account");
-                }
-                else {
-                    dbxName.set(n.users().getCurrentAccount().getName().getDisplayName());
-                }
-            } catch (DbxException e) {
-                throw new RuntimeException(e);
-            }
-        });
-
         if (!DATA_DIR.exists())
             DATA_DIR.mkdirs();
 
         if (!DBX_DIR.exists())
             DBX_DIR.mkdirs();
 
-        this.readFromFile();
+        readConfigFile();
+        readDataFile();
         TaskTwig.instance = this;
 
         authDbxFromFile();
@@ -119,52 +114,58 @@ public class TaskTwig implements Serializable {
         return TaskTwig.instance;
     }
 
-    public static void setDayStart(LocalTime dayStart) {
-        TaskTwig.dayStart = dayStart;
+    public ReadOnlyObjectProperty<LocalTime> getDayStart() {
+        return dayStart;
     }
 
-    public static LocalTime getNightStart() {
-        return TaskTwig.nightStart;
+    public void setDayStart(LocalTime dayStart) {
+        this.dayStart.set(dayStart);
+        writeConfigFile();
     }
 
-    public static void setNightStart(LocalTime nightStart) {
-        TaskTwig.nightStart = nightStart;
+    public ReadOnlyObjectProperty<LocalTime> getNightStart() {
+        return nightStart;
     }
-    
+
+    public void setNightStart(LocalTime nightStart) {
+        this.nightStart.set(nightStart);
+        writeConfigFile();
+    }
+
     
     public static LocalDate effectiveDate(LocalDateTime date) {
-        if (date.toLocalTime().isBefore(dayStart))
+        if (date.toLocalTime().isBefore(instance.dayStart.get()))
             return date.toLocalDate().minusDays(1);
         
         else
             return date.toLocalDate();
     }
 
-    public static LocalDate effectiveDate() {
-        if (LocalTime.now().isBefore(dayStart))
+    public static LocalDate today() {
+        if (LocalTime.now().isBefore(instance.dayStart.get()))
             return LocalDate.now().minusDays(1);
         else
             return LocalDate.now();
     }
 
     public static boolean isNight(LocalTime time) {
-        if (time.isBefore(dayStart))
+        if (time.isBefore(instance.dayStart.get()))
             return true;
 
         else
-            return time.isAfter(nightStart);
+            return time.isAfter(instance.nightStart.get());
     }
 
     public static boolean isNight() {
         return TaskTwig.isNight(LocalTime.now());
     }
 
-    static boolean useFxThread() {
-        return TaskTwig.useFXThread;
+    static boolean notFxThread() {
+        return TaskTwig.notFXThread;
     }
 
     static <U> U callWithFXSafety(Supplier<U> supplier) {
-        if (TaskTwig.useFXThread)
+        if (TaskTwig.notFXThread)
             return CompletableFuture.supplyAsync(supplier, Platform::runLater).join();
         else
             return supplier.get();
@@ -272,174 +273,58 @@ public class TaskTwig implements Serializable {
         return dbxClient;
     }
 
-    public ReadOnlyStringProperty dbxName() {
-        return dbxName;
+    public String getDbxAccountName() throws DbxException, NullPointerException {
+        return dbxClient.get().users().getCurrentAccount().getName().getDisplayName();
     }
 
     public Journal todaysJournal() {
-        journalMap.putIfAbsent(effectiveDate(), new Journal());
-        return journalMap.get(effectiveDate());
+        journalMap.putIfAbsent(today(), new Journal());
+        return journalMap.get(today());
     }
 
-    public void printSleepRecords() {
-        System.out.println("Sleep Records\n----------");
-        for (Map.Entry<LocalDate, Sleep> sleep : sleepRecords.entrySet()) {
-            System.out.println(sleep.getKey() + ": " + (sleep.getValue().length().toMinutes()/60.0) + " hours");
-        }
-    }
+    private void readConfigFile() {
+        try (JsonParser parser = mapper.createParser(CONFIG_FILE)) {
+            parser.nextToken();
+            assertEqual(parser.nextName(), "version");
+            int version = parser.nextIntValue(0);
 
-    public void printWorkoutRecords() {
-        System.out.println("Workout Records\n----------");
+            if (version == 1) {
+                assertEqual(parser.nextName(), "dayStart");
+                dayStart.set(LocalTime.parse(parser.nextStringValue()));
 
-        for (Workout workout : workoutRecords) {
-            System.out.println("  " + workout.start().toLocalDate() + workout.start().toLocalTime().truncatedTo(ChronoUnit.MINUTES) + " - " + workout.end().toLocalTime().truncatedTo(ChronoUnit.MINUTES) + ": " + workout.length().toMinutes() + " minutes:");
+                assertEqual(parser.nextName(), "nightStart");
+                nightStart.set(LocalTime.parse(parser.nextStringValue()));
 
-            for (Map.Entry<Exercise, Integer> exercise : workout.exercises().entrySet()) {
-                System.out.println("\t" + exercise.getKey().name() + ": " + exercise.getValue() + " " + exercise.getKey().unit().displayName);
+                assertEqual(parser.nextName(), "lastSyncedHash");
+                if (parser.nextValue() == JsonToken.VALUE_STRING)
+                    lastSyncedHash = parser.getValueAsString();
+                else
+                    lastSyncedHash = null;
             }
         }
-    }
-
-    public void printExercises() {
-        System.out.println("Exercises\n----------");
-
-        for (Exercise exercise : exerciseList) {
-            System.out.println("\t" + exercise.name());
+        catch (JacksonIOException e) {
+            System.out.println("Error reading config file: " + e.getMessage());
         }
     }
 
-    public void printAllTasks() {
-        System.out.println("Tasks\n----------");
+    private void writeConfigFile() {
+        try (JsonGenerator generator = mapper.createGenerator(CONFIG_FILE, JsonEncoding.UTF8)) {
+            generator.writeStartObject();
 
-        for (Task task : taskList) {
-            if (task.isDone()) {
-                System.out.println("\t" + task.name() + " done!");
-            }
-            else {
-                System.out.println("\t" + task.name() + " due " + task.getInterval().next() + ((task.dueTime() == null) ? "" : (" at " + task.dueTime())));
-            }
+            generator.writeNumberProperty("version", CONFIG_VERSION);
+            generator.writePOJOProperty("dayStart", dayStart.get());
+            generator.writePOJOProperty("nightStart", nightStart.get());
+
+            if (lastSyncedHash != null)
+                generator.writeStringProperty("lastSyncedHash", lastSyncedHash);
+            else
+                generator.writeNullProperty("lastSyncedHash");
+
+            generator.writeEndObject();
         }
     }
 
-    public void saveToFileFX() {
-        TaskTwig.useFXThread = true;
-        saveToFiles();
-        TaskTwig.useFXThread = false;
-    }
-
-    public void saveToFiles() {
-        Map<DataFile, byte[]> liveHashes = genLiveDataHashes();
-        List<DataFile> saveFiles = findOutOfDateFiles(liveHashes);
-        System.out.println("Saving files: " + saveFiles);
-
-        for (DataFile file : saveFiles) {
-            switch (file) {
-                case SLEEP -> {
-                    try (JsonGenerator generator = mapper.createGenerator(DataFile.SLEEP.file, JsonEncoding.UTF8)) {
-                        generator.writeStartObject();
-
-                        generator.writeNumberProperty("version", Sleep.VERSION);
-                        generator.writePOJOProperty("sleepProgressStart", this.sleepStart.getValue());
-                        generator.writePOJOProperty("sleepRecords", this.sleepRecords);
-                        generator.writeEndObject();
-                    }
-                }
-                case WORKOUT -> {
-                    try (JsonGenerator generator = mapper.createGenerator(DataFile.WORKOUT.file, JsonEncoding.UTF8)) {
-                        generator.writeStartObject();
-
-                        generator.writeNumberProperty("version", Workout.VERSION);
-                        generator.writePOJOProperty("workoutProgressStart", this.workoutStart.getValue());
-                        generator.writePOJOProperty("exercises", this.exerciseList);
-                        generator.writePOJOProperty("workoutRecords", this.workoutRecords);
-
-                        generator.writeEndObject();
-                    }
-                }
-                case TASK -> {
-                    try (JsonGenerator generator = mapper.createGenerator(DataFile.TASK.file, JsonEncoding.UTF8)) {
-                        generator.writeStartObject();
-
-                        generator.writeNumberProperty("version", Task.VERSION);
-
-                        generator.writeArrayPropertyStart("tasks");
-                        for (Task task : taskList) {
-                            generator.writePOJO(task);
-                        }
-                        generator.writeEndArray();
-
-                        generator.writeEndObject();
-                    }
-                }
-                case LIST -> {
-                    try (JsonGenerator generator = mapper.createGenerator(DataFile.LIST.file, JsonEncoding.UTF8)) {
-                        generator.writeStartObject();
-
-                        generator.writeNumberProperty("version", TwigList.VERSION);
-
-                        generator.writeArrayPropertyStart("lists");
-                        for (TwigList list : twigLists) {
-                            generator.writePOJO(list);
-                        }
-                        generator.writeEndArray();
-
-                        generator.writeEndObject();
-                    }
-                }
-                case ROUTINE -> {
-                    try (JsonGenerator generator = mapper.createGenerator(DataFile.ROUTINE.file, JsonEncoding.UTF8)) {
-                        generator.writeStartObject();
-
-                        generator.writeNumberProperty("version", Routine.VERSION);
-
-                        generator.writeArrayPropertyStart("routines");
-                        for (Routine routine : routineList) {
-                            generator.writePOJO(routine);
-                        }
-                        generator.writeEndArray();
-
-                        generator.writeEndObject();
-                    }
-                }
-                case JOURNAL -> {
-                    try (JsonGenerator generator = mapper.createGenerator(DataFile.JOURNAL.file, JsonEncoding.UTF8)) {
-                        generator.writeStartObject();
-
-                        generator.writeNumberProperty("version", Journal.VERSION);
-
-                        generator.writePOJOProperty("journals", this.journalMap);
-
-                        generator.writeEndObject();
-                    }
-                }
-            }
-        }
-
-        if (!saveFiles.isEmpty()) {
-            try (JsonGenerator generator = mapper.createGenerator(COMMIT_FILE, JsonEncoding.UTF8)) {
-                var digest = MessageDigest.getInstance("SHA-256");
-                Map<DataFile, String> fileHashes = new HashMap<>();
-                for (Map.Entry<DataFile, byte[]> hash : liveHashes.entrySet()) {
-                    fileHashes.put(hash.getKey(), Base64.getEncoder().encodeToString(hash.getValue()));
-                    digest.update(hash.getValue());
-                }
-                String commitHash = Base64.getEncoder().encodeToString(digest.digest());
-
-                generator.writeStartObject();
-
-                generator.writePOJOProperty("timestamp", Instant.now());
-                generator.writeStringProperty("commitHash", commitHash);
-                generator.writePOJOProperty("fileHashes", fileHashes);
-
-                generator.writeEndObject();
-
-            } catch (NoSuchAlgorithmException e) {
-                throw new RuntimeException(e);
-            }
-        }
-    }
-
-    private void readFromFile() {
+    private void readDataFile() {
         // Parse sleep records
         SortedMap<LocalDate, Sleep> sleepMap = new TreeMap<>();
         try (JsonParser parser = mapper.createParser(DataFile.SLEEP.file)) {
@@ -554,28 +439,146 @@ public class TaskTwig implements Serializable {
         this.journalMap = FXCollections.observableMap(journals);
     }
 
+    public void saveToFileFX() {
+        TaskTwig.notFXThread = true;
+        saveToFiles();
+        TaskTwig.notFXThread = false;
+    }
+
+    public void saveToFiles() {
+        Map<DataFile, byte[]> liveHashes = genLiveDataHashes();
+        List<DataFile> saveFiles = findOutOfDateFiles(liveHashes);
+        System.out.println("Saving files: " + saveFiles);
+
+        for (DataFile file : saveFiles) {
+            switch (file) {
+                case SLEEP -> {
+                    try (JsonGenerator generator = mapper.createGenerator(DataFile.SLEEP.file, JsonEncoding.UTF8)) {
+                        generator.writeStartObject();
+
+                        generator.writeNumberProperty("version", Sleep.VERSION);
+                        generator.writePOJOProperty("sleepProgressStart", this.sleepStart.getValue());
+                        generator.writePOJOProperty("sleepRecords", this.sleepRecords);
+                        generator.writeEndObject();
+                    }
+                }
+                case WORKOUT -> {
+                    try (JsonGenerator generator = mapper.createGenerator(DataFile.WORKOUT.file, JsonEncoding.UTF8)) {
+                        generator.writeStartObject();
+
+                        generator.writeNumberProperty("version", Workout.VERSION);
+                        generator.writePOJOProperty("workoutProgressStart", this.workoutStart.getValue());
+                        generator.writePOJOProperty("exercises", this.exerciseList);
+                        generator.writePOJOProperty("workoutRecords", this.workoutRecords);
+
+                        generator.writeEndObject();
+                    }
+                }
+                case TASK -> {
+                    try (JsonGenerator generator = mapper.createGenerator(DataFile.TASK.file, JsonEncoding.UTF8)) {
+                        generator.writeStartObject();
+
+                        generator.writeNumberProperty("version", Task.VERSION);
+
+                        generator.writeArrayPropertyStart("tasks");
+                        for (Task task : taskList) {
+                            generator.writePOJO(task);
+                        }
+                        generator.writeEndArray();
+
+                        generator.writeEndObject();
+                    }
+                }
+                case LIST -> {
+                    try (JsonGenerator generator = mapper.createGenerator(DataFile.LIST.file, JsonEncoding.UTF8)) {
+                        generator.writeStartObject();
+
+                        generator.writeNumberProperty("version", TwigList.VERSION);
+
+                        generator.writeArrayPropertyStart("lists");
+                        for (TwigList list : twigLists) {
+                            generator.writePOJO(list);
+                        }
+                        generator.writeEndArray();
+
+                        generator.writeEndObject();
+                    }
+                }
+                case ROUTINE -> {
+                    try (JsonGenerator generator = mapper.createGenerator(DataFile.ROUTINE.file, JsonEncoding.UTF8)) {
+                        generator.writeStartObject();
+
+                        generator.writeNumberProperty("version", Routine.VERSION);
+
+                        generator.writeArrayPropertyStart("routines");
+                        for (Routine routine : routineList) {
+                            generator.writePOJO(routine);
+                        }
+                        generator.writeEndArray();
+
+                        generator.writeEndObject();
+                    }
+                }
+                case JOURNAL -> {
+                    try (JsonGenerator generator = mapper.createGenerator(DataFile.JOURNAL.file, JsonEncoding.UTF8)) {
+                        generator.writeStartObject();
+
+                        generator.writeNumberProperty("version", Journal.VERSION);
+
+                        generator.writePOJOProperty("journals", this.journalMap);
+
+                        generator.writeEndObject();
+                    }
+                }
+            }
+        }
+
+        if (!saveFiles.isEmpty()) {
+            try (JsonGenerator generator = mapper.createGenerator(COMMIT_FILE, JsonEncoding.UTF8)) {
+                var digest = MessageDigest.getInstance("SHA-256");
+                Map<DataFile, String> fileHashes = new TreeMap<>();
+                for (Map.Entry<DataFile, byte[]> hash : liveHashes.entrySet()) {
+                    fileHashes.put(hash.getKey(), Base64.getEncoder().encodeToString(hash.getValue()));
+                    digest.update(hash.getValue());
+                }
+                String commitHash = Base64.getEncoder().encodeToString(digest.digest());
+
+                generator.writeStartObject();
+
+                generator.writePOJOProperty("timestamp", Instant.now());
+                generator.writeStringProperty("commitHash", commitHash);
+                generator.writePOJOProperty("fileHashes", fileHashes);
+
+                generator.writeEndObject();
+
+            } catch (NoSuchAlgorithmException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
     private void assertEqual(Object actual, Object expected) throws JsonAssertException {
         if (!expected.equals(actual))
             throw new JsonAssertException("JSON parse encountered unexpected value. Expected: " + expected + ", actual: " + actual);
     }
 
-    private <T> void parseJsonList(List<T> list, JsonParser parser, Callback<TwigJsonNode, T> callback, int version) {
+    private <T> void parseJsonList(List<T> list, JsonParser parser, TwigJsonConstructor<T> callback, int version) {
         parser.nextToken();
         while (parser.currentToken() != JsonToken.END_ARRAY) {
             JsonNode node = parser.readValueAsTree();
-            T value = callback.call(new TwigJsonNode(node, version));
+            T value = callback.construct(node, version);
             list.add(value);
             parser.nextToken();
         }
     }
 
-    private <K, V> void parseJsonMap(Map<K, V> map, JsonParser parser, Callback<String, K> keyCallback, Callback<TwigJsonNode, V> valueCallback, int version) {
+    private <K, V> void parseJsonMap(Map<K, V> map, JsonParser parser, Callback<String, K> keyCallback, TwigJsonConstructor<V> valueCallback, int version) {
         parser.nextToken();
         while (parser.currentToken() != JsonToken.END_OBJECT) {
             K key = keyCallback.call(parser.currentName());
             parser.nextToken();
             JsonNode node = parser.readValueAsTree();
-            V value = valueCallback.call(new TwigJsonNode(node, version));
+            V value = valueCallback.construct(node, version);
             map.put(key, value);
             parser.nextToken();
         }
@@ -600,7 +603,7 @@ public class TaskTwig implements Serializable {
     }
 
     private Map<DataFile, byte[]> genLiveDataHashes() {
-        Map<DataFile, byte[]> hashes = new HashMap<>();
+        Map<DataFile, byte[]> hashes = new TreeMap<>();
         for (DataFile dataFile : DataFile.values()) {
             hashes.put(dataFile, hashLiveData(dataFile));
         }
@@ -615,7 +618,7 @@ public class TaskTwig implements Serializable {
                     if (callWithFXSafety(this::isSleeping))
                         digest.update(callWithFXSafety(sleepStart::get).toString().getBytes(StandardCharsets.UTF_8));
 
-                    Map<LocalDate, Sleep> sleepMap = callWithFXSafety(() -> new HashMap<>(sleepRecords));
+                    Map<LocalDate, Sleep> sleepMap = callWithFXSafety(() -> new TreeMap<>(sleepRecords));
                     for (Map.Entry<LocalDate, Sleep> sleepEntry : sleepMap.entrySet()) {
                         digest.update(sleepEntry.getKey().toString().getBytes(StandardCharsets.UTF_8));
                         sleepEntry.getValue().hashContents(digest);
@@ -649,7 +652,7 @@ public class TaskTwig implements Serializable {
                     }
                 }
                 case JOURNAL -> {
-                    Map<LocalDate, Journal> journals = callWithFXSafety(() -> new HashMap<>(journalMap));
+                    Map<LocalDate, Journal> journals = callWithFXSafety(() -> new TreeMap<>(journalMap));
                     for (Map.Entry<LocalDate, Journal> journalEntry : journals.entrySet()) {
                         digest.update(journalEntry.getKey().toString().getBytes(StandardCharsets.UTF_8));
                         journalEntry.getValue().hashContents(digest);
@@ -737,8 +740,8 @@ public class TaskTwig implements Serializable {
         dbxClient.set(new DbxClientV2(config, credential));
     }
 
-    public FileAction dbxSync() {
-        CommitDiff commitDiff = compareCommitToDbx();
+    public FileAction dbxSync(BiFunction<CommitData, CommitData, FileAction> conflictCallback) {
+        CommitDiff commitDiff = compareCommitToDbx(conflictCallback);
         return dbxSync(commitDiff);
     }
     
@@ -776,14 +779,15 @@ public class TaskTwig implements Serializable {
                     System.out.println("Error downloading commit file: " + e.getMessage());
                 }
 
-                readFromFile();
+                readDataFile();
             }
         }
 
+        writeConfigFile();
         return commitDiff.action;
     }
 
-    private record CommitData(Instant timestamp, String commitHash, Map<DataFile, String> fileHashes) {}
+    public record CommitData(Instant timestamp, String commitHash, Map<DataFile, String> fileHashes) {}
     public enum FileAction {
         DOWNLOAD,
         UPLOAD,
@@ -804,35 +808,71 @@ public class TaskTwig implements Serializable {
         return new CommitData(timestamp, commitHash, fileHashes);
     }
 
-    public record CommitDiff(FileAction action, List<DataFile> files) {}
-    public CommitDiff compareCommitToDbx() {
-        if (!COMMIT_FILE.exists()) {
-            return new CommitDiff(FileAction.DOWNLOAD, Arrays.asList(DataFile.values()));
-        }
-        
-        CommitData localCommit, remoteCommit;
+    private CommitData readLocalCommitData() {
         try (JsonParser parser = mapper.createParser(COMMIT_FILE)) {
-            localCommit = readCommitData(parser);
+            return readCommitData(parser);
         }
+        catch (JacksonIOException | JsonAssertException e) {
+            System.out.println("Couldn't read local commit file: " + e.getMessage());
+            return null;
+        }
+    }
 
+    private CommitData readDbxCommitData() {
         try (var remoteCommitFile = dbxClient.get().files().downloadBuilder("/" + COMMIT_FILE.getName()).start();
              JsonParser parser = mapper.createParser(remoteCommitFile.getInputStream()))
         {
-            remoteCommit = readCommitData(parser);
+            return readCommitData(parser);
         }
         catch (DbxException | JsonAssertException e) {
-            System.out.println("Error loading remote commit file: " + e.getMessage());
-            System.out.println("Overwriting dropbox files");
+            System.out.println("Couldn't read remote commit file: " + e.getMessage());
+            return null;
+        }
+    }
 
+    public record CommitDiff(FileAction action, List<DataFile> files) {}
+    public CommitDiff compareCommitToDbx(BiFunction<CommitData, CommitData, FileAction> conflictCallback) {
+        List<DataFile> filesToSync = new ArrayList<>();
+        CommitData localCommit = readLocalCommitData();
+        CommitData remoteCommit = readDbxCommitData();
+
+        if (localCommit == null && remoteCommit == null) {
+            lastSyncedHash = null;
+            return new CommitDiff(FileAction.NONE, filesToSync);
+        }
+        else if (localCommit == null) {
+            lastSyncedHash = remoteCommit.commitHash;
+            return new CommitDiff(FileAction.DOWNLOAD, Arrays.asList(DataFile.values()));
+        }
+        else if (remoteCommit == null) {
+            lastSyncedHash = localCommit.commitHash;
             return new CommitDiff(FileAction.UPLOAD, Arrays.asList(DataFile.values()));
         }
 
-        List<DataFile> filesToSync = new ArrayList<>();
         if (localCommit.commitHash().equals(remoteCommit.commitHash())) {
+            lastSyncedHash = localCommit.commitHash;
             return new CommitDiff(FileAction.NONE, filesToSync);
         }
 
-        FileAction fileAction = localCommit.timestamp.isAfter(remoteCommit.timestamp) ? FileAction.UPLOAD : FileAction.DOWNLOAD;
+
+        FileAction fileAction;
+        if (remoteCommit.commitHash.equals(lastSyncedHash)) {
+            fileAction = FileAction.UPLOAD;
+        }
+        else if (localCommit.commitHash.equals(lastSyncedHash)) {
+            fileAction = FileAction.DOWNLOAD;
+        }
+        else {
+            fileAction = conflictCallback.apply(localCommit, remoteCommit);
+        }
+
+        switch (fileAction) {
+            case DOWNLOAD -> lastSyncedHash = remoteCommit.commitHash;
+            case UPLOAD -> lastSyncedHash = localCommit.commitHash;
+            case NONE -> {
+                return new CommitDiff(FileAction.NONE, filesToSync);
+            }
+        }
 
         for (Map.Entry<DataFile, String> localHash : localCommit.fileHashes().entrySet()) {
             if (!localHash.getValue().equals(remoteCommit.fileHashes().get(localHash.getKey()))) {
@@ -841,159 +881,6 @@ public class TaskTwig implements Serializable {
         }
 
         return new CommitDiff(fileAction, filesToSync);
-    }
-
-
-    public static void main() {
-        TaskTwig tracker = new TaskTwig();
-
-        Scanner userIn = new Scanner(System.in);
-
-        String command;
-        String[] commandSplit = {""};
-
-        while (!commandSplit[0].equals("done")) {
-            System.out.print("Command: ");
-
-            do {
-                command = userIn.nextLine();
-            }
-            while (command.isBlank());
-
-            System.out.println("Entered command: " + command);
-            commandSplit = command.split(" ");
-
-            switch (commandSplit[0]) {
-
-                case "sleep":
-                    switch (commandSplit[1]) {
-                        case "print":
-                            tracker.printSleepRecords();
-                            break;
-
-                        case "start":
-                            tracker.startSleep();
-                            break;
-
-                        case "finish":
-                            tracker.finishSleep();
-                            break;
-
-                        default:
-                            System.out.println("Error: \"" + commandSplit[1] + "\" not recognized");
-                            break;
-                    }
-                    break;
-
-                case "workout":
-                    switch (commandSplit[1]) {
-                        case "print":
-                            tracker.printWorkoutRecords();
-                            break;
-
-                        case "start":
-                            tracker.startWorkout();
-                            break;
-
-                        case "finish":
-                            tracker.printExercises();
-                            List<Exercise> exerciseList = tracker.getExerciseList();
-                            Map<Exercise, Integer> exercises = new HashMap<>();
-                            String indexStr = "";
-
-                            while (!indexStr.equals("done")) {
-                                System.out.print("Index of exercise: ");
-
-                                do {
-                                    indexStr = userIn.nextLine();
-                                }
-                                while (indexStr.isEmpty());
-
-                                try {
-                                    int index = Integer.parseInt(indexStr);
-
-                                    if (index >= 0 && index < exerciseList.size()) {
-                                        System.out.print("Exercise Quantity: ");
-                                        int quantity = userIn.nextInt();
-                                        exercises.put(exerciseList.get(index), quantity);
-                                    }
-                                } catch (Exception e) {
-                                    if (!indexStr.equals("done")) {
-                                        System.out.println("Index \"" + indexStr + "\" not recognized");
-                                        System.err.println(e.getMessage());
-                                    }
-                                }
-                            }
-
-                            tracker.finishWorkout(exercises);
-                            break;
-
-                        default:
-                            System.out.println("Error: \"" + commandSplit[1] + "\" not recognized");
-                            break;
-                    }
-                    break;
-
-                case "exercise":
-                    switch (commandSplit[1]) {
-                        case "print":
-                            tracker.printExercises();
-                            break;
-
-                        case "add":
-                            System.out.print("Exercise name: ");
-                            String name = userIn.nextLine();
-
-                            System.out.print("Exercise unit: ");
-                            Exercise.ExerciseUnit unit = Exercise.ExerciseUnit.valueOf(userIn.nextLine());
-
-                            tracker.addExercise(name, unit);
-
-                        default:
-                            break;
-                    }
-                    break;
-
-                case "task":
-                    switch (commandSplit[1]) {
-                        case "print":
-                            tracker.printAllTasks();
-                            break;
-
-                        case "finish":
-                            System.out.print("Task index: ");
-                            int index = userIn.nextInt();
-                            tracker.finishTask(index);
-                            break;
-
-                        default:
-                            break;
-                    }
-                    break;
-
-                case "status":
-                    if (tracker.sleepStart.getValue() != null) {
-                        System.out.println("Sleeping, started " + tracker.sleepStart.getValue().format(DateTimeFormatter.ISO_DATE_TIME));
-                    }
-                    if (tracker.workoutStart.getValue() != null) {
-                        System.out.println("Working out, started " + tracker.workoutStart.getValue().format(DateTimeFormatter.ISO_DATE_TIME));
-                    }
-                    else {
-                        System.out.println("Nothing in progress");
-                    }
-                    break;
-
-                case "done":
-                    break;
-
-                default:
-                    System.out.println("Error: \"" + commandSplit[0] + "\" not recognized");
-                    break;
-            }
-        }
-
-        userIn.close();
-        tracker.saveToFiles();
     }
 
 }
