@@ -705,6 +705,8 @@ public class TaskTwig implements Serializable {
             var digest = MessageDigest.getInstance("SHA-256");
             switch (file) {
                 case SLEEP -> {
+                    digest.update((byte) Sleep.VERSION);
+
                     if (callWithFXSafety(this::isSleeping))
                         digest.update(callWithFXSafety(sleepStart::get).toString().getBytes(StandardCharsets.UTF_8));
 
@@ -715,6 +717,8 @@ public class TaskTwig implements Serializable {
                     }
                 }
                 case WORKOUT -> {
+                    digest.update((byte) Workout.VERSION);
+
                     if (callWithFXSafety(this::isWorkingOut))
                         digest.update(callWithFXSafety(workoutStart::get).toString().getBytes(StandardCharsets.UTF_8));
 
@@ -727,21 +731,29 @@ public class TaskTwig implements Serializable {
                     }
                 }
                 case TASK ->  {
+                    digest.update((byte) Task.VERSION);
+
                     for (Task task : callWithFXSafety(() -> new ArrayList<>(taskList))) {
                         task.hashContents(digest);
                     }
                 }
                 case ROUTINE -> {
+                    digest.update((byte) Routine.VERSION);
+
                     for (Routine routine : callWithFXSafety(() -> new ArrayList<>(routineList))) {
                         routine.hashContents(digest);
                     }
                 }
                 case LIST -> {
+                    digest.update((byte) TwigList.VERSION);
+
                     for (TwigList twigList : callWithFXSafety(() -> new ArrayList<>(twigLists))) {
                         twigList.hashContents(digest);
                     }
                 }
                 case JOURNAL -> {
+                    digest.update((byte) Journal.VERSION);
+
                     SortedMap<LocalDate, Journal> journals = callWithFXSafety(() -> new TreeMap<>(journalMap));
                     for (Map.Entry<LocalDate, Journal> journalEntry : journals.entrySet()) {
                         digest.update(journalEntry.getKey().toString().getBytes(StandardCharsets.UTF_8));
