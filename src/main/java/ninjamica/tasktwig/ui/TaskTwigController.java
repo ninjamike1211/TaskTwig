@@ -2,6 +2,7 @@ package ninjamica.tasktwig.ui;
 
 import com.dropbox.core.DbxException;
 import javafx.animation.Animation;
+import javafx.animation.Interpolator;
 import javafx.animation.RotateTransition;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -35,6 +36,7 @@ import javafx.scene.layout.Background;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
@@ -147,6 +149,7 @@ public class TaskTwigController {
             private final Text dueText = new Text();
             private final HBox pane = new HBox(7);
             {
+                setStyle("-fx-background: transparent");
                 checkBox.setFocusTraversable(false);
                 dueText.setStyle("-fx-fill: #a1a1a1");
 
@@ -287,7 +290,6 @@ public class TaskTwigController {
             }
         });
         todayTaskTreeView.setRoot(new TreeItem<Task>(new Task("rootTask", new TaskInterval.NoInterval())));
-        todayTaskTreeView.setShowRoot(false);
 
         sleepDateCol.setCellValueFactory(sleep -> new SimpleObjectProperty<>(sleep.getValue().end().toLocalDate().minusDays(1)));
         sleepStartCol.setCellValueFactory(sleep -> new SimpleObjectProperty<>(sleep.getValue().start().toLocalTime()));
@@ -520,10 +522,8 @@ public class TaskTwigController {
             }
         });
         taskTreeTable.setRoot(new TreeItem<>(new Task("placeholder", new TaskInterval.NoInterval())));
-        taskTreeTable.setShowRoot(false);
 
         listTree.setRoot(new TreeItem<>());
-        listTree.setShowRoot(false);
         listTree.getRoot().setExpanded(true);
         listTree.setCellFactory(treeView -> new TreeCell<>() {
             private Subscription subscription = Subscription.EMPTY;
@@ -1426,6 +1426,7 @@ public class TaskTwigController {
             loadIconAnimation.setByAngle(360);
             loadIconAnimation.setDelay(Duration.ZERO);
             loadIconAnimation.setCycleCount(Animation.INDEFINITE);
+            loadIconAnimation.setInterpolator(Interpolator.LINEAR);
         }
 
         public void forceSync() {

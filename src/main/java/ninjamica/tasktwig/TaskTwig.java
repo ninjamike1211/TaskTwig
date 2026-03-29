@@ -6,6 +6,7 @@ import com.dropbox.core.oauth.DbxCredential;
 import com.dropbox.core.v2.DbxClientV2;
 import com.dropbox.core.v2.files.WriteMode;
 import javafx.application.Platform;
+import javafx.beans.Observable;
 import javafx.beans.binding.ObjectExpression;
 import javafx.beans.property.*;
 import javafx.beans.value.ObservableValue;
@@ -467,7 +468,7 @@ public class TaskTwig implements Serializable {
         }
 
         // Parse tasks
-        this.taskList = FXCollections.observableArrayList();
+        this.taskList = FXCollections.observableArrayList(task -> new Observable[] {task.intervalProperty()});
         try (JsonParser parser = mapper.createParser(DataFile.TASK.file)) {
             parser.nextToken();
             assertEqual(parser.nextName(), "version");
@@ -495,7 +496,7 @@ public class TaskTwig implements Serializable {
         }
 
         // Parse routines
-        this.routineList = FXCollections.observableArrayList();
+        this.routineList = FXCollections.observableArrayList(routine -> new Observable[] {routine.interval()});
         try (JsonParser parser = mapper.createParser(DataFile.ROUTINE.file)) {
             parser.nextToken();
             assertEqual(parser.nextName(), "version");
