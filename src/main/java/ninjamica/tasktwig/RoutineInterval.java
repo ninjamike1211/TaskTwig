@@ -163,7 +163,7 @@ public interface RoutineInterval {
                 return !TaskTwig.today().isBefore(nextDue);
             }
             else {
-                while (!TaskTwig.today().isAfter(nextDue))
+                while (!TaskTwig.today().isBefore(nextDue))
                     this.nextDue = this.nextDue.plusDays(intervalDays.get());
 
                 return TaskTwig.today().equals(nextDue);
@@ -234,6 +234,10 @@ public interface RoutineInterval {
         @JsonGetter("nextDue")
         public LocalDate getNextDue() {
             return nextDue;
+        }
+
+        public void setNextDue(LocalDate nextDue) {
+            this.nextDue = nextDue;
         }
     }
 

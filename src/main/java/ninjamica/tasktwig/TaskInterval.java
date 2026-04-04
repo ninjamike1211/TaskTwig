@@ -4,8 +4,6 @@ import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIncludeProperties;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-
-import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.binding.BooleanExpression;
 import javafx.beans.binding.ObjectBinding;
@@ -584,6 +582,9 @@ public abstract class TaskInterval {
 
                 @Override
                 protected LocalDate computeValue() {
+                    if (dates.isEmpty())
+                        return null;
+
                     LocalDate today = TaskTwig.today();
                     int todayDate = today.getDayOfMonth();
                     int maxDate = today.lengthOfMonth();

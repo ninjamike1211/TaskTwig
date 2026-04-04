@@ -6,17 +6,14 @@ import javafx.animation.Interpolator;
 import javafx.animation.RotateTransition;
 import javafx.application.Application;
 import javafx.application.Platform;
-import javafx.beans.Observable;
 import javafx.beans.property.SimpleFloatProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.property.StringProperty;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.MapChangeListener;
 import javafx.collections.ObservableList;
-import javafx.collections.transformation.FilteredList;
 import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Worker;
 import javafx.event.ActionEvent;
@@ -24,7 +21,6 @@ import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.chart.AreaChart;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
@@ -36,7 +32,6 @@ import javafx.scene.layout.Background;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
@@ -48,7 +43,7 @@ import ninjamica.tasktwig.*;
 import ninjamica.tasktwig.TaskTwig.CommitDiff;
 import ninjamica.tasktwig.TaskTwig.FileAction;
 import ninjamica.tasktwig.TwigList.TwigListItem;
-import org.controlsfx.control.PopOver;
+import org.controlsfx.control.MasterDetailPane;
 import org.controlsfx.control.ToggleSwitch;
 import org.controlsfx.glyphfont.Glyph;
 
@@ -92,12 +87,14 @@ public class TaskTwigController {
     @FXML private TableColumn<Workout, Float> workoutLengthCol;
     @FXML private TableColumn<Workout, String> workoutExerciseCol;
 
+    @FXML private MasterDetailPane taskMasterDetailPane;
     @FXML private TreeTableView<Task> taskTreeTable;
     @FXML private TreeTableColumn<Task, Task> taskNameCol;
     @FXML private TreeTableColumn<Task, TaskInterval> taskDateTimeCol;
     @FXML private TreeTableColumn<Task, TaskInterval> taskRepeatCol;
     @FXML private TreeView<Object> listTree;
 
+    @FXML private MasterDetailPane routineMasterDetailPane;
     @FXML private TableView<Routine> routineTable;
     @FXML private TableColumn<Routine, String> routineNameCol;
     @FXML private TableColumn<Routine, RoutineInterval> routineIntervalCol;
@@ -142,7 +139,28 @@ public class TaskTwigController {
     public void initialize() {
 
         rootPane.setDisable(true);
+        backgroundService = new SaveSyncService(this);
 
+        initTodayPage();
+        initSleepPage();
+        initWorkoutPage();
+        initTaskPage();
+        initRoutinePage();
+        initListPage();
+        initJournalPage();
+        initSettingsPage();
+
+        Thread twigInitThread = new Thread(() -> {
+            twig.authDbxFromFile();
+            Platform.runLater(() -> {
+                rootPane.setDisable(false);
+                attachTwigData();
+            });
+        });
+        twigInitThread.start();
+    }
+
+    private void initTodayPage() {
         todayRoutineListView.setCellFactory(col -> new ListCell<>() {
             private final CheckBox checkBox = new CheckBox();
             private final Text name = new Text();
@@ -257,8 +275,8 @@ public class TaskTwigController {
                     setGraphic(pane);
 
                     sub = Subscription.combine(
-                        item.dueTimeProperty().subscribe(() -> updateFormatting(item)),
-                        item.nextDueObservable().subscribe(() -> updateFormatting(item))
+                            item.dueTimeProperty().subscribe(() -> updateFormatting(item)),
+                            item.nextDueObservable().subscribe(() -> updateFormatting(item))
                     );
                 }
             }
@@ -290,7 +308,9 @@ public class TaskTwigController {
             }
         });
         todayTaskTreeView.setRoot(new TreeItem<Task>(new Task("rootTask", new TaskInterval.NoInterval())));
+    }
 
+    private void initSleepPage() {
         sleepDateCol.setCellValueFactory(sleep -> new SimpleObjectProperty<>(sleep.getValue().end().toLocalDate().minusDays(1)));
         sleepStartCol.setCellValueFactory(sleep -> new SimpleObjectProperty<>(sleep.getValue().start().toLocalTime()));
         sleepEndCol.setCellValueFactory(sleep -> new SimpleObjectProperty<>(sleep.getValue().end().toLocalTime()));
@@ -334,15 +354,19 @@ public class TaskTwigController {
             }
         });
         sleepStartChartData.setName("Sleep Start");
-        sleepEndChartData.setName("SleepEnd");  
+        sleepEndChartData.setName("SleepEnd");
         sleepVBox.getChildren().remove(sleepTimeChartPane);
+    }
 
+    private void initWorkoutPage() {
         workoutDateCol.setCellValueFactory(workout -> new SimpleStringProperty(workout.getValue().start().toLocalDate().format(dateFormat)));
         workoutLengthCol.setCellValueFactory(workout -> new SimpleFloatProperty(workout.getValue().length().toSeconds() / 60f).asObject());
         workoutExerciseCol.setCellValueFactory(workout -> genWorkoutExercises(workout.getValue().exercises()));
+    }
 
-//        taskDoneCol.setCellValueFactory(task -> new SimpleBooleanProperty(task.getValue().getValue().isDone()));
-//        taskDoneCol.setCellFactory(col -> new TaskDoneCell());
+    private void initTaskPage() {
+        TaskContent taskDetailView = new TaskContent();
+        taskMasterDetailPane.setDetailNode(taskDetailView);
         taskNameCol.setCellValueFactory(task -> task.getValue().valueProperty());
         taskNameCol.setCellFactory(col -> new TreeTableCell<>() {
 
@@ -422,10 +446,6 @@ public class TaskTwigController {
 
                 else {
                     switch (item) {
-                        case TaskInterval.SingleDateInterval single -> {
-                            setText(dateFormat.format(single.getDueDate()));
-                            itemSubs = single.dueDateProperty().subscribe(dueDate -> setText(dateFormat.format(dueDate))).and(itemSubs);
-                        }
                         case TaskInterval.DayInterval day -> {
                             setDayText(day);
                             itemSubs = day.intervalProperty().subscribe(newValue -> setDayText(day)).and(itemSubs);
@@ -467,7 +487,7 @@ public class TaskTwigController {
                 if (month.getDates().isEmpty()) {
                     setText(null);
                 } else {
-                    StringBuilder dateStr = new StringBuilder();
+                    StringBuilder dateStr = new StringBuilder("month: ");
 
                     for (Integer date : month.getDates()) {
                         dateStr.append(date);
@@ -479,20 +499,22 @@ public class TaskTwigController {
             }
         });
         taskRepeatCol.setCellValueFactory(cell -> cell.getValue().getValue().intervalProperty());
+        taskTreeTable.getSelectionModel().selectedItemProperty().subscribe(item -> {
+            if (item == null) {
+                taskDetailView.setTask(null);
+                taskMasterDetailPane.setShowDetailNode(false);
+            }
+            else {
+                taskDetailView.setTask(item.getValue());
+                taskMasterDetailPane.setShowDetailNode(true);
+            }
+        });
         taskTreeTable.setRowFactory(table -> new TreeTableRow<>() {
             private final ContextMenu contextMenu;
             {
                 setOnMouseClicked(event -> {
-                    if (!isEmpty() && getItem() != null) {
-                        if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2) {
-                            Task task = getTreeItem().getValue();
-                            Node content = new TaskContent(task);
-                            PopOver popOver = new PopOver(content);
-                            popOver.titleProperty().bind(task.nameProperty());
-                            popOver.setArrowLocation(PopOver.ArrowLocation.TOP_LEFT);
-                            popOver.getRoot().getStylesheets().clear();
-                            popOver.show(this);
-                        }
+                    if (isEmpty() || getItem() == null) {
+                        table.getSelectionModel().clearSelection();
                     }
                 });
                 MenuItem deleteItem = new MenuItem("Delete");
@@ -522,7 +544,141 @@ public class TaskTwigController {
             }
         });
         taskTreeTable.setRoot(new TreeItem<>(new Task("placeholder", new TaskInterval.NoInterval())));
+    }
 
+    private void initRoutinePage() {
+        RoutineContent routineDetailView = new RoutineContent();
+        routineMasterDetailPane.setDetailNode(routineDetailView);
+        routineTable.setRowFactory(table -> {
+            TableRow<Routine> row = new TableRow<>();
+            row.setOnMouseClicked(event -> {
+                if (row.isEmpty() || row.getItem() == null) {
+                    table.getSelectionModel().clearSelection();
+                }
+            });
+
+            row.setOnDragDetected(event -> {
+                if (!row.isEmpty() && row.getIndex() != -1) {
+                    Dragboard db = row.startDragAndDrop(TransferMode.MOVE);
+                    db.setDragView(row.snapshot(null, null));
+                    ClipboardContent cc =  new ClipboardContent();
+                    cc.put(DRAG_DROP_MIME_FORMAT, row.getIndex());
+                    db.setContent(cc);
+                    event.consume();
+                }
+            });
+
+            row.setOnDragOver(event -> {
+                Dragboard db = event.getDragboard();
+                if (db.hasContent(DRAG_DROP_MIME_FORMAT)) {
+                    if (row.getIndex() != (int)db.getContent(DRAG_DROP_MIME_FORMAT)) {
+                        event.acceptTransferModes(TransferMode.MOVE);
+                        event.consume();
+
+                        if (!row.isEmpty() || row.getIndex() == table.getItems().size()) {
+                            row.setStyle("-fx-border-color: -fx-accent; -fx-border-width: 2 0 0 0");
+                        }
+                    }
+                }
+            });
+
+            row.setOnDragExited(event -> {
+                row.setStyle("");
+                event.consume();
+            });
+
+            row.setOnDragDropped(event -> {
+                Dragboard db = event.getDragboard();
+                if (db.hasContent(DRAG_DROP_MIME_FORMAT)) {
+                    int oldIndex =  (int)db.getContent(DRAG_DROP_MIME_FORMAT);
+                    Routine draggedItem = table.getItems().remove(oldIndex);
+
+                    int newIndex;
+                    if (row.isEmpty()) {
+                        newIndex = table.getItems().size();
+                    }
+                    else {
+                        newIndex = row.getIndex();
+                        if (newIndex >= oldIndex) {
+                            newIndex--;
+                        }
+                    }
+                    table.getItems().add(newIndex, draggedItem);
+
+                    event.setDropCompleted(true);
+                    event.consume();
+                }
+            });
+
+            MenuItem deleteItem = new MenuItem("Delete");
+            deleteItem.setOnAction(event -> table.getItems().remove(row.getIndex()));
+            row.setContextMenu(new ContextMenu(deleteItem));
+
+            return row;
+        });
+        routineTable.getSelectionModel().selectedItemProperty().subscribe(item -> {
+            if (item == null) {
+                routineDetailView.setRoutine(null);
+                routineMasterDetailPane.setShowDetailNode(false);
+            }
+            else {
+                routineDetailView.setRoutine(item);
+                routineMasterDetailPane.setShowDetailNode(true);
+            }
+        });
+        routineNameCol.setCellValueFactory(routine -> routine.getValue().name());
+        routineIntervalCol.setCellValueFactory(routine -> routine.getValue().interval());
+        routineDueCol.setCellValueFactory(routine -> routine.getValue().dueTime());
+        routineIntervalCol.setCellFactory(col -> new TableCell<>() {
+            private Subscription itemSubs = Subscription.EMPTY;
+
+            @Override
+            protected void updateItem(RoutineInterval item, boolean empty) {
+                super.updateItem(item, empty);
+
+                itemSubs.unsubscribe();
+                itemSubs = Subscription.EMPTY;
+
+                if (item == null || empty) {
+                    setText(null);
+                }
+                else {
+                    switch (item) {
+                        case RoutineInterval.DailyInterval daily -> setText("Daily");
+                        case RoutineInterval.DayInterval day -> {
+                            itemSubs = day.intervalProperty().subscribe(newValue -> setDayText(day)).and(itemSubs);
+                            itemSubs = day.repeatFromLastDoneProperty().subscribe(newValue -> setDayText(day)).and(itemSubs);
+                        }
+                        case RoutineInterval.WeekInterval week -> {
+                            setWeekText(week);
+                            itemSubs = week.dayOfWeekBitmapProperty().subscribe(newValue -> setWeekText(week)).and(itemSubs);
+                        }
+                        default -> setText(null);
+                    }
+                }
+            }
+
+            private void setWeekText(RoutineInterval.WeekInterval week) {
+                StringBuilder retVal = new StringBuilder("weekly:");
+                for (DayOfWeek day : DayOfWeek.values()) {
+                    if (week.isIntervalOn(day)) {
+                        retVal.append(" ").append(dayOfWeekShorthand[day.ordinal()]);
+                    }
+                }
+                setText(retVal.toString());
+            }
+
+            private void setDayText(RoutineInterval.DayInterval day) {
+                if (day.isRepeatFromLastDone())
+                    setText("Every " + day.getInterval() + " days after done");
+                else
+                    setText("Every " + day.getInterval() + " days");
+            }
+        });
+        routineDueCol.setCellFactory(column -> new timeTableCell<>(timeFormat) {});
+    }
+
+    private void initListPage() {
         listTree.setRoot(new TreeItem<>());
         listTree.getRoot().setExpanded(true);
         listTree.setCellFactory(treeView -> new TreeCell<>() {
@@ -635,134 +791,9 @@ public class TaskTwigController {
         });
         listTree.setContextMenu(new ContextMenu(addItem));
         listTree.addEventFilter(MouseEvent.MOUSE_PRESSED, Event::consume);
+    }
 
-
-        routineTable.setRowFactory(table -> {
-            TableRow<Routine> row = new TableRow<>();
-            row.setOnMouseClicked(event -> {
-                if (!row.isEmpty() && row.getIndex() != -1) {
-                    if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2) {
-                        Routine routine = table.getItems().get(row.getIndex());
-                        Node content = new RoutineContent(routine);
-                        PopOver popOver = new PopOver(content);
-                        popOver.titleProperty().bind(routine.name());
-                        popOver.setArrowLocation(PopOver.ArrowLocation.TOP_LEFT);
-                        popOver.getRoot().getStylesheets().clear();
-                        popOver.show(row);
-                    }
-                }
-            });
-
-            row.setOnDragDetected(event -> {
-                if (!row.isEmpty() && row.getIndex() != -1) {
-                    Dragboard db = row.startDragAndDrop(TransferMode.MOVE);
-                    db.setDragView(row.snapshot(null, null));
-                    ClipboardContent cc =  new ClipboardContent();
-                    cc.put(DRAG_DROP_MIME_FORMAT, row.getIndex());
-                    db.setContent(cc);
-                    event.consume();
-                }
-            });
-
-            row.setOnDragOver(event -> {
-                Dragboard db = event.getDragboard();
-                if (db.hasContent(DRAG_DROP_MIME_FORMAT)) {
-                    if (row.getIndex() != (int)db.getContent(DRAG_DROP_MIME_FORMAT)) {
-                        event.acceptTransferModes(TransferMode.MOVE);
-                        event.consume();
-
-                        if (!row.isEmpty() || row.getIndex() == table.getItems().size()) {
-                            row.setStyle("-fx-border-color: -fx-accent; -fx-border-width: 2 0 0 0");
-                        }
-                    }
-                }
-            });
-
-            row.setOnDragExited(event -> {
-                row.setStyle("");
-                event.consume();
-            });
-
-            row.setOnDragDropped(event -> {
-                Dragboard db = event.getDragboard();
-                if (db.hasContent(DRAG_DROP_MIME_FORMAT)) {
-                    int oldIndex =  (int)db.getContent(DRAG_DROP_MIME_FORMAT);
-                    Routine draggedItem = table.getItems().remove(oldIndex);
-
-                    int newIndex;
-                    if (row.isEmpty()) {
-                        newIndex = table.getItems().size();
-                    }
-                    else {
-                        newIndex = row.getIndex();
-                        if (newIndex >= oldIndex) {
-                            newIndex--;
-                        }
-                    }
-                    table.getItems().add(newIndex, draggedItem);
-
-                    event.setDropCompleted(true);
-                    event.consume();
-                }
-            });
-
-            MenuItem deleteItem = new MenuItem("Delete");
-            deleteItem.setOnAction(event -> table.getItems().remove(row.getIndex()));
-            row.setContextMenu(new ContextMenu(deleteItem));
-
-            return row;
-        });
-        routineNameCol.setCellValueFactory(routine -> routine.getValue().name());
-        routineIntervalCol.setCellValueFactory(routine -> routine.getValue().interval());
-        routineDueCol.setCellValueFactory(routine -> routine.getValue().dueTime());
-        routineIntervalCol.setCellFactory(col -> new TableCell<>() {
-            private Subscription itemSubs = Subscription.EMPTY;
-
-            @Override
-            protected void updateItem(RoutineInterval item, boolean empty) {
-                super.updateItem(item, empty);
-
-                itemSubs.unsubscribe();
-                itemSubs = Subscription.EMPTY;
-
-                if (item == null || empty) {
-                    setText(null);
-                }
-                else {
-                    switch (item) {
-                        case RoutineInterval.DailyInterval daily -> setText("Daily");
-                        case RoutineInterval.DayInterval day -> {
-                            itemSubs = day.intervalProperty().subscribe(newValue -> setDayText(day)).and(itemSubs);
-                            itemSubs = day.repeatFromLastDoneProperty().subscribe(newValue -> setDayText(day)).and(itemSubs);
-                        }
-                        case RoutineInterval.WeekInterval week -> {
-                            setWeekText(week);
-                            itemSubs = week.dayOfWeekBitmapProperty().subscribe(newValue -> setWeekText(week)).and(itemSubs);
-                        }
-                        default -> setText(null);
-                    }
-                }
-            }
-
-            private void setWeekText(RoutineInterval.WeekInterval week) {
-                StringBuilder retVal = new StringBuilder("weekly:");
-                for (DayOfWeek day : DayOfWeek.values()) {
-                    if (week.isIntervalOn(day)) {
-                        retVal.append(" ").append(dayOfWeekShorthand[day.ordinal()]);
-                    }
-                }
-                setText(retVal.toString());
-            }
-
-            private void setDayText(RoutineInterval.DayInterval day) {
-                if (day.isRepeatFromLastDone())
-                    setText("Every " + day.getInterval() + " days after done");
-                else
-                    setText("Every " + day.getInterval() + " days");
-            }
-        });
-        routineDueCol.setCellFactory(column -> new timeTableCell<>(timeFormat) {});
-
+    private void initJournalPage() {
         journalListView.setCellFactory(list -> new ListCell<>() {
             @Override
             protected void updateItem(LocalDate item, boolean empty) {
@@ -792,12 +823,12 @@ public class TaskTwigController {
                 journalTextArea.setPromptText("Type journal here...");
             }
         });
-        
+
         journalRoutineList.setSelectionModel(null);
         journalTaskList.setSelectionModel(null);
+    }
 
-        backgroundService = new SaveSyncService(this);
-
+    private void initSettingsPage() {
         new TimeSpinner(settingsDayStartSpinner, null);
         new TimeSpinner(settingsNightStartSpinner, null);
 
@@ -810,15 +841,6 @@ public class TaskTwigController {
 
         twig.dbxClient().subscribe(_ -> updateDbxAccountState());
         updateDbxAccountState();
-
-        Thread twigInitThread = new Thread(() -> {
-            twig.authDbxFromFile();
-            Platform.runLater(() -> {
-                rootPane.setDisable(false);
-                attachTwigData();
-            });
-        });
-        twigInitThread.start();
     }
 
     private void attachTwigData() {
@@ -829,7 +851,7 @@ public class TaskTwigController {
         todayRoutineListView.setItems(twig.routineList().filtered(item -> item.getInterval().isToday()));
         subscriptions = subscriptions.and(() -> todayRoutineListView.setItems(null));
 
-        var filteredTasks = FXCollections.observableList(twig.taskList(), task -> new Observable[] {task.inProgressObservable()}).filtered(Task::inProgress);
+        var filteredTasks = twig.taskList().filtered(Task::inProgress);
         populateTaskTree(todayTaskTreeView.getRoot(), filteredTasks);
 
         Runnable updateDayNight = () -> {
@@ -884,9 +906,6 @@ public class TaskTwigController {
         subscriptions = settingsNightStartSpinner.getValueFactory().valueProperty().subscribe(twig::setNightStart).and(subscriptions);
         subscriptions = settingsIntervalSpinner.getValueFactory().valueProperty().subscribe(twig.syncIntervalProperty()::setValue).and(subscriptions);
 
-//        backgroundThread.setDaemon(true);
-//        backgroundThread.start();
-        System.out.println("Service period: " + backgroundService.getPeriod());
         backgroundService.restart();
     }
 
@@ -952,8 +971,6 @@ public class TaskTwigController {
     }
 
     private void handleTaskItemChange(ListChangeListener.Change<? extends Task> change, TreeItem<Task> parent) {
-        System.out.println("Tasks change: " + change.toString());
-
         ObservableList<TreeItem<Task>> treeChildren = parent.getChildren();
         while (change.next()) {
             if (change.wasPermutated()) {
@@ -1227,15 +1244,15 @@ public class TaskTwigController {
 
     @FXML
     protected void onNewTaskButtonClick(ActionEvent event) {
-        TaskDialog dialog = new TaskDialog(stage);
-        Optional<Task> taskResult = dialog.showAndWait();
-        taskResult.ifPresent(task -> twig.taskList().add(task));
+        twig.taskList().add(new Task("", new TaskInterval.NoInterval()));
+        taskTreeTable.getSelectionModel().clearSelection();
+        taskTreeTable.getSelectionModel().select(taskTreeTable.getRoot().getChildren().getLast());
     }
 
     private void addSubtask(TreeItem<Task> parent) {
-        TaskDialog dialog = new TaskDialog(stage);
-        Optional<Task> taskResult = dialog.showAndWait();
-        taskResult.ifPresent(task -> parent.getValue().getChildren().add(task));
+        Task newTask = new Task("", new TaskInterval.NoInterval());
+        parent.getValue().getChildren().add(newTask);
+        taskTreeTable.getSelectionModel().select(parent.getChildren().getLast());
     }
 
     private Alert createAlert(Alert.AlertType type, String title, String header, String content) {
@@ -1252,9 +1269,10 @@ public class TaskTwigController {
 
     @FXML
     protected void createRoutine() {
-        RoutineDialog dialog = new RoutineDialog(stage);
-        Optional<Routine> routineResult = dialog.showAndWait();
-        routineResult.ifPresent(routine -> twig.routineList().add(routine));
+        Routine newRoutine = new Routine("", null, new RoutineInterval.DailyInterval());
+        twig.routineList().add(newRoutine);
+        routineTable.getSelectionModel().clearSelection();
+        routineTable.getSelectionModel().select(newRoutine);
     }
 
     private void updateDbxAccountState() {
@@ -1371,16 +1389,11 @@ public class TaskTwigController {
         alert.initOwner(stage);
 
         Optional<ButtonType> result = alert.showAndWait();
-        if (result.isPresent() && result.get() == ButtonType.YES) {
-            return true;
-        }
-
-        return false;
+        return result.isPresent() && result.get() == ButtonType.YES;
     }
 
     @FXML
     protected void onSyncButton() {
-        System.out.println("Sync button pressed");
         backgroundService.syncNow();
     }
 
@@ -1452,15 +1465,12 @@ public class TaskTwigController {
             final boolean forceSync = syncOverrideFlag;
             syncOverrideFlag = false;
 
-            System.out.println("Creating task with forceSync: " + forceSync);
-
             return new javafx.concurrent.Task<>() {
                 @Override
                 protected Void call() throws Exception {
                     setStartUI();
 
                     boolean syncToDbx = forceSync || CompletableFuture.supplyAsync(twig.autoSyncProperty()::get, Platform::runLater).join();
-                    System.out.println("Running task with sync: " + syncToDbx);
 
                     updateMessage("Saving and hashing data");
                     twig.saveToFileFX();
@@ -1473,13 +1483,9 @@ public class TaskTwigController {
                             commitDiff = twig.compareCommitToDbx(controller::handleDataConflict);
                         }
                         else if (exitPrompt) {
-                            System.out.println("Checking sync with exitPrompt");
                             commitDiff = twig.compareCommitToDbx(() -> {
-                                System.out.println("exitPrompt callback");
                                 exitPromptAsked = true;
-                                boolean sync = controller.userConfirmSave();
-                                System.out.println("exitPrompt result: " + sync);
-                                if (sync)
+                                if (controller.userConfirmSave())
                                     return controller.handleDataConflict();
                                 else
                                     return null;
@@ -1537,7 +1543,6 @@ public class TaskTwigController {
                     }
 
                     setDoneUI();
-                    System.out.println("Finished task");
                     return null;
                 }
 
@@ -1562,7 +1567,6 @@ public class TaskTwigController {
                 }
 
                 private void setStartUI() {
-                    System.out.println("Setting start UI");
                     Platform.runLater(() -> {
                         controller.syncLabel.textProperty().bind(this.messageProperty());
                         controller.syncLabel.setGraphic(loadIcon);
@@ -1572,7 +1576,6 @@ public class TaskTwigController {
                 }
 
                 private void setDoneUI() {
-                    System.out.println("Setting Done UI");
                     Platform.runLater(() -> {
                         controller.syncLabel.textProperty().unbind();
                         controller.syncLabel.setGraphic(null);

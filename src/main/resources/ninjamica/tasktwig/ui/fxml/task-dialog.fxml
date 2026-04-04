@@ -14,58 +14,59 @@
 
 <VBox fx:id="contentVBox" alignment="CENTER" spacing="15.0" stylesheets="@dark-theme.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1">
    <children>
+      <Label fx:id="blankLabel" text="Select a task to view&#10;its properties here" textAlignment="CENTER" wrapText="true" />
       <AnchorPane fx:id="namePane">
          <children>
-            <TextField fx:id="nameTextField" layoutX="92.0" prefHeight="26.0" prefWidth="189.0" />
-            <Label layoutY="4.0" text="Name" />
+            <TextField fx:id="nameTextField" layoutY="20.0" prefHeight="26.0" prefWidth="189.0" promptText="Task name" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" />
+            <Label text="Name:" />
          </children>
       </AnchorPane>
       <AnchorPane fx:id="typePane">
          <children>
-            <ChoiceBox fx:id="typeChoiceBox" layoutX="92.0" prefHeight="26.0" prefWidth="189.0" />
-            <Label layoutY="4.0" text="Type" />
+            <ChoiceBox fx:id="typeChoiceBox" layoutY="20.0" prefHeight="26.0" prefWidth="189.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" />
+            <Label text="Repeat pattern:" />
          </children>
       </AnchorPane>
       <AnchorPane fx:id="dueDatePane">
          <children>
-            <DatePicker fx:id="dueDatePicker" layoutX="92.0" prefHeight="26.0" prefWidth="189.0" />
-            <Label layoutY="4.0" text="Due Date" />
+            <DatePicker fx:id="dueDatePicker" layoutY="20.0" prefHeight="26.0" prefWidth="189.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" />
+            <Label text="Due Date:" />
          </children>
       </AnchorPane>
       <AnchorPane fx:id="dayOfWeekPane">
          <children>
-            <Label layoutY="3.0" text="Days" />
-            <ToggleButton fx:id="dayMButton" layoutX="92.0" mnemonicParsing="false" prefWidth="27.0" text="M">
+            <Label text="Repeat every:" />
+            <ToggleButton fx:id="dayMButton" layoutY="20.0" mnemonicParsing="false" prefWidth="27.0" text="M">
                <font>
                   <Font size="11.0" />
                </font>
             </ToggleButton>
-            <ToggleButton fx:id="dayTButton" layoutX="119.0" mnemonicParsing="false" prefWidth="27.0" text="T">
+            <ToggleButton fx:id="dayTButton" layoutX="27.0" layoutY="20.0" mnemonicParsing="false" prefWidth="27.0" text="T">
                <font>
                   <Font size="11.0" />
                </font>
             </ToggleButton>
-            <ToggleButton fx:id="dayWButton" layoutX="146.0" mnemonicParsing="false" prefWidth="27.0" text="W">
+            <ToggleButton fx:id="dayWButton" layoutX="54.0" layoutY="20.0" mnemonicParsing="false" prefWidth="27.0" text="W">
                <font>
                   <Font size="11.0" />
                </font>
             </ToggleButton>
-            <ToggleButton fx:id="dayThButton" layoutX="173.0" mnemonicParsing="false" text="Th">
+            <ToggleButton fx:id="dayThButton" layoutX="81.0" layoutY="20.0" mnemonicParsing="false" text="Th">
                <font>
                   <Font size="11.0" />
                </font>
             </ToggleButton>
-            <ToggleButton fx:id="dayFButton" layoutX="200.0" mnemonicParsing="false" prefWidth="27.0" text="F">
+            <ToggleButton fx:id="dayFButton" layoutX="108.0" layoutY="20.0" mnemonicParsing="false" prefWidth="27.0" text="F">
                <font>
                   <Font size="11.0" />
                </font>
             </ToggleButton>
-            <ToggleButton fx:id="daySaButton" layoutX="227.0" mnemonicParsing="false" prefWidth="27.0" text="Sa">
+            <ToggleButton fx:id="daySaButton" layoutX="135.0" layoutY="20.0" mnemonicParsing="false" prefWidth="27.0" text="Sa">
                <font>
                   <Font size="11.0" />
                </font>
             </ToggleButton>
-            <ToggleButton fx:id="daySuButton" layoutX="254.0" mnemonicParsing="false" text="Su">
+            <ToggleButton fx:id="daySuButton" layoutX="162.0" layoutY="20.0" mnemonicParsing="false" text="Su">
                <font>
                   <Font size="11.0" />
                </font>
@@ -74,24 +75,24 @@
       </AnchorPane>
       <AnchorPane fx:id="dateOfMonthPane">
          <children>
-            <TextField fx:id="dateOfMonthField" layoutX="92.0" prefHeight="26.0" prefWidth="189.0" />
-            <Label layoutY="4.0" text="Dates" />
+            <TextField fx:id="dateOfMonthField" layoutY="20.0" prefHeight="26.0" prefWidth="189.0" promptText="dates, comma separated" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" />
+            <Label text="Repeat every date of month:" />
          </children>
       </AnchorPane>
       <AnchorPane fx:id="dayIntervalPane">
          <children>
-            <Label layoutY="5.0" text="Day Interval" />
-            <Spinner fx:id="dayIntervalSpinner" editable="true" layoutX="92.0" prefHeight="26.0" prefWidth="84.0" />
-            <Label layoutX="187.0" layoutY="5.0" text="days" />
-            <CheckBox fx:id="dayIntervalRepeatCheckbox" layoutX="104.0" layoutY="76.0" mnemonicParsing="false" style="-fx-text-fill: lightgray;" text="Repeat from Last Done" textAlignment="RIGHT" wrapText="true" />
-            <DatePicker fx:id="dayIntervalNextDuePicker" layoutX="92.0" layoutY="40.0" />
-            <Label layoutY="43.0" text="Next Due" />
+            <Label text="Repeat every:" />
+            <Spinner fx:id="dayIntervalSpinner" editable="true" layoutY="20.0" prefHeight="26.0" prefWidth="84.0" />
+            <Label layoutX="90.0" layoutY="24.0" text="days" />
+            <CheckBox fx:id="dayIntervalRepeatCheckbox" layoutY="56.0" mnemonicParsing="false" nodeOrientation="RIGHT_TO_LEFT" style="-fx-text-fill: lightgray;" text="Repeat from Last Done" textAlignment="RIGHT" wrapText="true" />
+            <DatePicker fx:id="dayIntervalNextDuePicker" layoutY="110.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" />
+            <Label layoutY="92.0" text="Next due:" />
          </children>
       </AnchorPane>
       <AnchorPane fx:id="dueTimePane">
          <children>
-            <Spinner fx:id="dueTimeSpinner" layoutX="92.0" prefHeight="26.0" prefWidth="100.0" />
-            <Label layoutY="4.0" text="Due Time" />
+            <Spinner fx:id="dueTimeSpinner" layoutY="20.0" prefHeight="26.0" prefWidth="100.0" />
+            <Label text="Due Time:" />
          </children>
       </AnchorPane>
    </children>
@@ -99,6 +100,6 @@
       <Insets />
    </opaqueInsets>
    <padding>
-      <Insets bottom="20.0" left="25.0" right="25.0" top="25.0" />
+      <Insets bottom="20.0" left="20.0" right="20.0" top="25.0" />
    </padding>
 </VBox>

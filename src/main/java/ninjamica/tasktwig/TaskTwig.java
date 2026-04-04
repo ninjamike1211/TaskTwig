@@ -468,7 +468,7 @@ public class TaskTwig implements Serializable {
         }
 
         // Parse tasks
-        this.taskList = FXCollections.observableArrayList(task -> new Observable[] {task.intervalProperty()});
+        this.taskList = FXCollections.observableArrayList(task -> new Observable[] {task.intervalProperty(), task.inProgressObservable()});
         try (JsonParser parser = mapper.createParser(DataFile.TASK.file)) {
             parser.nextToken();
             assertEqual(parser.nextName(), "version");
@@ -846,7 +846,7 @@ public class TaskTwig implements Serializable {
     }
     
     public FileAction dbxSync(CommitDiff commitDiff) {
-        System.out.println("commitDiff: " + commitDiff);
+        System.out.println("sync: " + commitDiff.action() + " " + commitDiff.files());
         switch(commitDiff.action) {
             case UPLOAD -> {
                 for (DataFile dataFile : commitDiff.files) {
