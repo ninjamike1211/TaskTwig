@@ -9,77 +9,82 @@
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.ToggleButton?>
 <?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<VBox fx:id="contentVBox" alignment="TOP_CENTER" maxHeight="192.0" spacing="15.0" stylesheets="@dark-theme.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1">
+<VBox fx:id="contentVBox" alignment="TOP_CENTER" spacing="15.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
    <children>
       <Label fx:id="blankLabel" minHeight="40.0" text="Select a routine to view&#10;its properties here" textAlignment="CENTER" wrapText="true" />
       <AnchorPane fx:id="namePane">
          <children>
-            <TextField fx:id="nameTextField" layoutY="20.0" prefHeight="26.0" prefWidth="189.0" />
+            <TextField fx:id="nameTextField" layoutY="25.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" />
             <Label text="Name:" />
          </children>
       </AnchorPane>
       <AnchorPane fx:id="typePane">
          <children>
-            <ChoiceBox fx:id="typeChoiceBox" layoutY="20.0" prefHeight="26.0" prefWidth="189.0" />
+            <ChoiceBox fx:id="typeChoiceBox" layoutY="25.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" />
             <Label text="Repeat pattern:" />
          </children>
       </AnchorPane>
       <AnchorPane fx:id="dayIntervalPane">
          <children>
             <Label text="Repeat every:" />
-            <Spinner fx:id="dayIntervalSpinner" editable="true" layoutY="20.0" prefHeight="26.0" prefWidth="108.0" />
-            <Label layoutX="112.0" layoutY="24.0" text="days" />
-            <CheckBox fx:id="dayIntervalRepeatCheckbox" contentDisplay="RIGHT" layoutY="55.0" mnemonicParsing="false" nodeOrientation="RIGHT_TO_LEFT" text="Repeat from Last Done:" textFill="LIGHTGRAY" />
-            <DatePicker fx:id="dayIntervalNextDuePicker" layoutY="113.0" />
-            <Label layoutY="95.0" text="Next due:" />
+            <Spinner fx:id="dayIntervalSpinner" editable="true" layoutY="25.0" prefHeight="26.0" prefWidth="108.0" />
+            <Label layoutX="111.0" layoutY="33.0" text="days" />
+            <CheckBox fx:id="dayIntervalRepeatCheckbox" contentDisplay="RIGHT" layoutY="76.0" mnemonicParsing="false" nodeOrientation="RIGHT_TO_LEFT" text="Repeat from Last Done:" textFill="LIGHTGRAY" />
+            <DatePicker fx:id="dayIntervalNextDuePicker" layoutY="136.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" />
+            <Label layoutY="111.0" text="Next due:" />
          </children>
       </AnchorPane>
       <AnchorPane fx:id="dayOfWeekPane">
          <children>
             <Label text="Repeat every:" />
-            <ToggleButton fx:id="dayMButton" layoutY="20.0" mnemonicParsing="false" prefWidth="27.0" text="M">
-               <font>
-                  <Font size="11.0" />
-               </font>
-            </ToggleButton>
-            <ToggleButton fx:id="dayTButton" layoutX="27.0" layoutY="20.0" mnemonicParsing="false" prefWidth="27.0" text="T">
-               <font>
-                  <Font size="11.0" />
-               </font>
-            </ToggleButton>
-            <ToggleButton fx:id="dayWButton" layoutX="54.0" layoutY="20.0" mnemonicParsing="false" prefWidth="27.0" text="W">
-               <font>
-                  <Font size="11.0" />
-               </font>
-            </ToggleButton>
-            <ToggleButton fx:id="dayThButton" layoutX="81.0" layoutY="20.0" mnemonicParsing="false" text="Th">
-               <font>
-                  <Font size="11.0" />
-               </font>
-            </ToggleButton>
-            <ToggleButton fx:id="dayFButton" layoutX="108.0" layoutY="20.0" mnemonicParsing="false" prefWidth="27.0" text="F">
-               <font>
-                  <Font size="11.0" />
-               </font>
-            </ToggleButton>
-            <ToggleButton fx:id="daySaButton" layoutX="135.0" layoutY="20.0" mnemonicParsing="false" prefWidth="27.0" text="Sa">
-               <font>
-                  <Font size="11.0" />
-               </font>
-            </ToggleButton>
-            <ToggleButton fx:id="daySuButton" layoutX="162.0" layoutY="20.0" mnemonicParsing="false" text="Su">
-               <font>
-                  <Font size="11.0" />
-               </font>
-            </ToggleButton>
+            <HBox layoutY="25.0">
+               <children>
+                  <ToggleButton fx:id="dayMButton" mnemonicParsing="false" text="M">
+                     <font>
+                        <Font size="11.0" />
+                     </font>
+                  </ToggleButton>
+                  <ToggleButton fx:id="dayTButton" mnemonicParsing="false" text="T">
+                     <font>
+                        <Font size="11.0" />
+                     </font>
+                  </ToggleButton>
+                  <ToggleButton fx:id="dayWButton" mnemonicParsing="false" text="W">
+                     <font>
+                        <Font size="11.0" />
+                     </font>
+                  </ToggleButton>
+                  <ToggleButton fx:id="dayThButton" mnemonicParsing="false" text="Th">
+                     <font>
+                        <Font size="11.0" />
+                     </font>
+                  </ToggleButton>
+                  <ToggleButton fx:id="dayFButton" mnemonicParsing="false" text="F">
+                     <font>
+                        <Font size="11.0" />
+                     </font>
+                  </ToggleButton>
+                  <ToggleButton fx:id="daySaButton" mnemonicParsing="false" text="Sa">
+                     <font>
+                        <Font size="11.0" />
+                     </font>
+                  </ToggleButton>
+                  <ToggleButton fx:id="daySuButton" mnemonicParsing="false" text="Su">
+                     <font>
+                        <Font size="11.0" />
+                     </font>
+                  </ToggleButton>
+               </children>
+            </HBox>
          </children>
       </AnchorPane>
       <AnchorPane fx:id="dueTimePane" layoutX="35.0" layoutY="156.0">
          <children>
-            <Spinner fx:id="dueTimeSpinner" layoutY="20.0" prefHeight="26.0" prefWidth="100.0" />
+            <Spinner fx:id="dueTimeSpinner" layoutY="25.0" prefWidth="110.0" />
             <Label text="Due Time:" />
          </children>
       </AnchorPane>

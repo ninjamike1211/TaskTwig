@@ -2,10 +2,7 @@ package ninjamica.tasktwig.ui;
 
 import com.dropbox.core.DbxException;
 
-import atlantafx.base.controls.Card;
-import atlantafx.base.controls.Tile;
 import atlantafx.base.controls.ToggleSwitch;
-import atlantafx.base.theme.Styles;
 import javafx.animation.Animation;
 import javafx.animation.Interpolator;
 import javafx.animation.RotateTransition;
@@ -25,31 +22,23 @@ import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
-import javafx.geometry.HPos;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.geometry.Side;
 import javafx.scene.chart.AreaChart;
-import javafx.scene.chart.CategoryAxis;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
 import javafx.scene.control.Alert.AlertType;
-import javafx.scene.control.ScrollPane.ScrollBarPolicy;
-import javafx.scene.control.TabPane.TabClosingPolicy;
 import javafx.scene.input.*;
 import javafx.scene.layout.Background;
-import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
-import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.*;
-import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
+import javafx.util.Callback;
 import javafx.util.Duration;
 import javafx.util.StringConverter;
 import javafx.util.Subscription;
@@ -57,8 +46,7 @@ import ninjamica.tasktwig.*;
 import ninjamica.tasktwig.TaskTwig.CommitDiff;
 import ninjamica.tasktwig.TaskTwig.FileAction;
 import ninjamica.tasktwig.TwigList.TwigListItem;
-
-import org.kordamp.ikonli.fontawesome6.FontAwesomeBrands;
+import org.controlsfx.control.MasterDetailPane;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
 
@@ -75,64 +63,68 @@ import java.util.concurrent.CompletableFuture;
 
 public class TaskTwigController {
 
-    private VBox rootPane;
+    @FXML private Pane rootPane;
 
-    private ListView<Routine> todayRoutineListView;
-    private TreeView<Task> todayTaskTreeView;
-    private Button todaySleepButton;
-    private Button todayExerciseButton;
-    private TextArea todayJournalTextArea;
-    private Spinner<Float> todayWeightSpinner;
+    @FXML private ListView<Routine> todayRoutineListView;
+    @FXML private TreeView<Task> todayTaskTreeView;
+    @FXML private Button todaySleepButton;
+    @FXML private Button todayExerciseButton;
+    @FXML private TextArea todayJournalTextArea;
+    @FXML private Spinner<Float> todayWeightSpinner;
 
-    private Button sleepButton;
-    private Label sleepStatusLabel;
-    private TableView<Sleep> sleepTableView;
-    private TableColumn<Sleep, LocalDate> sleepDateCol;
-    private TableColumn<Sleep, LocalTime> sleepStartCol;
-    private TableColumn<Sleep, LocalTime> sleepEndCol;
-    private TableColumn<Sleep, Float> sleepLengthCol;
-    private LineChart<String, Number> sleepTimeChart;
-    private AreaChart<String, Number> sleepLenChart;
-    private NumberAxis sleepTimeNumAxis;
+    @FXML private VBox sleepVBox;
+    @FXML private Button sleepButton;
+    @FXML private Label sleepStatusLabel;
+    @FXML private TableView<Sleep> sleepTableView;
+    @FXML private TableColumn<Sleep, LocalDate> sleepDateCol;
+    @FXML private TableColumn<Sleep, LocalTime> sleepStartCol;
+    @FXML private TableColumn<Sleep, LocalTime> sleepEndCol;
+    @FXML private TableColumn<Sleep, Float> sleepLengthCol;
+    @FXML private HBox sleepLenChartPane;
+    @FXML private HBox sleepTimeChartPane;
+    @FXML private LineChart<String, Float> sleepTimeChart;
+    @FXML private AreaChart<String, Float> sleepLenChart;
+    @FXML private NumberAxis sleepTimeNumAxis;
 
-    private Button workoutButton;
-    private Label workoutStatusLabel;
-    private TableView<Workout> workoutTableView;
-    private TableColumn<Workout, String> workoutDateCol;
-    private TableColumn<Workout, Float> workoutLengthCol;
-    private TableColumn<Workout, String> workoutExerciseCol;
+    @FXML private Button workoutButton;
+    @FXML private Label workoutStatusLabel;
+    @FXML private TableView<Workout> workoutTableView;
+    @FXML private TableColumn<Workout, String> workoutDateCol;
+    @FXML private TableColumn<Workout, Float> workoutLengthCol;
+    @FXML private TableColumn<Workout, String> workoutExerciseCol;
 
-    private TreeTableView<Task> taskTreeTable;
-    private TreeTableColumn<Task, Task> taskNameCol;
-    private TreeTableColumn<Task, Integer> taskPriorityCol;
-    private TreeTableColumn<Task, TaskInterval> taskDateTimeCol;
-    private TreeTableColumn<Task, TaskInterval> taskRepeatCol;
-    private TreeView<Object> listTree;
+    @FXML private MasterDetailPane taskMasterDetailPane;
+    @FXML private TreeTableView<Task> taskTreeTable;
+    @FXML private TreeTableColumn<Task, Task> taskNameCol;
+    @FXML private TreeTableColumn<Task, Integer> taskPriorityCol;
+    @FXML private TreeTableColumn<Task, TaskInterval> taskDateTimeCol;
+    @FXML private TreeTableColumn<Task, TaskInterval> taskRepeatCol;
+    @FXML private TreeView<Object> listTree;
 
-    private TableView<Routine> routineTable;
-    private TableColumn<Routine, String> routineNameCol;
-    private TableColumn<Routine, RoutineInterval> routineIntervalCol;
-    private TableColumn<Routine, LocalTime> routineDueCol;
-    private Button routineButton;
+    @FXML private MasterDetailPane routineMasterDetailPane;
+    @FXML private TableView<Routine> routineTable;
+    @FXML private TableColumn<Routine, String> routineNameCol;
+    @FXML private TableColumn<Routine, RoutineInterval> routineIntervalCol;
+    @FXML private TableColumn<Routine, LocalTime> routineDueCol;
+    @FXML private Button routineButton;
 
-    private ListView<LocalDate> journalListView;
-    private TextArea journalTextArea;
-    private ListView<String> journalRoutineList;
-    private ListView<String> journalTaskList;
-    private Spinner<Float> journalWeightSpinner;
+    @FXML private ListView<LocalDate> journalListView;
+    @FXML private TextArea journalTextArea;
+    @FXML private ListView<String> journalRoutineList;
+    @FXML private ListView<String> journalTaskList;
+    @FXML private Spinner<Float> journalWeightSpinner;
 
-    private Spinner<LocalTime> settingsDayStartSpinner;
-    private Spinner<LocalTime> settingsNightStartSpinner;
-    private Spinner<Integer> settingsIntervalSpinner;
-    private ToggleSwitch settingsAutoSyncToggle;
-    private Label settingsDbxName;
-    private Button settingsDbxButton;
+    @FXML private Spinner<LocalTime> settingsDayStartSpinner;
+    @FXML private Spinner<LocalTime> settingsNightStartSpinner;
+    @FXML private Spinner<Integer> settingsIntervalSpinner;
+    @FXML private ToggleSwitch settingsAutoSyncToggle;
+    @FXML private Label settingsDbxName;
+    @FXML private Button settingsDbxButton;
 
-    private Button syncButton;
-    private Label syncLabel;
+    @FXML private Button syncButton;
+    @FXML private Label syncLabel;
     
     // private static final String darkStylesheet = TaskTwigController.class.getResource("fxml/dark-theme.css").toExternalForm();
-    private static final String chartStylesheet = TaskTwigController.class.getResource("fxml/areaChart.css").toExternalForm();
     private static final DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("EEE M/d/yyyy");
     private static final DateTimeFormatter shortDateFormat = DateTimeFormatter.ofPattern("M/d");
     private static final DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("h:mm a");
@@ -146,31 +138,25 @@ public class TaskTwigController {
     private Subscription subscriptions = Subscription.EMPTY;
     private SaveSyncService backgroundService;
 
-    private final XYChart.Series<String, Number> sleepLenChartData = new XYChart.Series<>();
-    private final XYChart.Series<String, Number> sleepStartChartData = new XYChart.Series<>();
-    private final XYChart.Series<String, Number> sleepEndChartData = new XYChart.Series<>();
+    private final XYChart.Series<String, Float> sleepLenChartData = new XYChart.Series<>();
+    private final XYChart.Series<String, Float> sleepStartChartData = new XYChart.Series<>();
+    private final XYChart.Series<String, Float> sleepEndChartData = new XYChart.Series<>();
 
 
-    public TaskTwigController() {
-        backgroundService = new SaveSyncService(this);
-        
-        ToolBar toolBar = initToolBar();
-        TabPane tabPane = new TabPane(
-            createTodayTab(),
-            createSleepTab(),
-            createExerciseTab(),
-            createTaskTab(),
-            createRoutineTab(),
-            createListTab(),
-            createJournalTab(),
-            createSettingsTab()
-        );
-        tabPane.setTabClosingPolicy(TabClosingPolicy.UNAVAILABLE);
-        
-        rootPane = new VBox(tabPane, toolBar);
-        rootPane.setPrefSize(910, 670);
+    @FXML
+    public void initialize() {
+
         rootPane.setDisable(true);
+        backgroundService = new SaveSyncService(this);
 
+        initTodayPage();
+        initSleepPage();
+        initWorkoutPage();
+        initTaskPage();
+        initRoutinePage();
+        initListPage();
+        initJournalPage();
+        initSettingsPage();
 
         Thread twigInitThread = new Thread(() -> {
             twig.authDbxFromFile();
@@ -182,27 +168,7 @@ public class TaskTwigController {
         twigInitThread.start();
     }
 
-    private ToolBar initToolBar() {
-        syncButton = new Button("Sync");
-        syncButton.setOnAction(this::onSyncButton);
-        syncLabel = new Label();
-        return new ToolBar(syncButton, syncLabel);
-    }
-
-    private Tab createTodayTab() {
-        Tab tab = new Tab("Today");
-        tab.setGraphic(new FontIcon(FontAwesomeSolid.CALENDAR_DAY));
-
-        GridPane todayGridPane = new GridPane(20, 15);
-        todayGridPane.setAlignment(Pos.CENTER);
-        todayGridPane.setPadding(new Insets(20));
-        tab.setContent(todayGridPane);
-
-        Label routineLabel = new Label("Routines:");
-        routineLabel.fontProperty().set(Font.font(16));
-        todayGridPane.add(routineLabel, 0, 0);
-        
-        todayRoutineListView = new ListView<>();
+    private void initTodayPage() {
         todayRoutineListView.setCellFactory(col -> new ListCell<>() {
             private final CheckBox checkBox = new CheckBox();
             private final Text name = new Text();
@@ -271,17 +237,7 @@ public class TaskTwigController {
                 }
             }
         });
-        todayGridPane.add(todayRoutineListView, 0, 1, 1, 3);
-        GridPane.setHgrow(todayRoutineListView, Priority.ALWAYS);
-        GridPane.setVgrow(todayRoutineListView, Priority.ALWAYS);
 
-        Label taskLabel = new Label("Tasks:");
-        taskLabel.setFont(Font.font(16));
-        todayGridPane.add(taskLabel, 1, 0);
-        
-        todayTaskTreeView = new TreeView<>();
-        todayTaskTreeView.setShowRoot(false);
-        todayTaskTreeView.setRoot(new TreeItem<Task>(new Task("rootTask", new TaskInterval.NoInterval(), 0)));
         todayTaskTreeView.setCellFactory(treeView -> new TreeCell<>() {
             private Subscription sub = Subscription.EMPTY;
 
@@ -366,83 +322,17 @@ public class TaskTwigController {
                 }
             }
         });
-        todayGridPane.add(todayTaskTreeView, 1, 1, 1, 3);
-        GridPane.setHgrow(todayTaskTreeView, Priority.ALWAYS);
-        GridPane.setVgrow(todayTaskTreeView, Priority.ALWAYS);
-
-    // Journal
-        todayJournalTextArea = new TextArea();
-        todayJournalTextArea.setPromptText("Type journal here...");
-        todayJournalTextArea.setWrapText(true);
-        todayJournalTextArea.setPrefWidth(150);
-        todayGridPane.add(todayJournalTextArea, 2, 3);
-        GridPane.setHgrow(todayJournalTextArea, Priority.NEVER);
-        GridPane.setVgrow(todayJournalTextArea, Priority.ALWAYS);
-        
-
-    // GridPane containing the rest of the interactions (others)
-        GridPane othersGridPane = new GridPane(3, 15);
-        GridPane.setHgrow(othersGridPane, Priority.NEVER);
-        Card othersCard = new Card();
-        othersCard.setBody(othersGridPane);
-        todayGridPane.add(othersCard, 2, 0, 1, 2);
-
-        Label sleepLabel = new Label("Sleep:", new FontIcon(FontAwesomeSolid.BED));
-        sleepLabel.setFont(Font.font(14));
-        othersGridPane.add(sleepLabel, 0, 0);
-
-        todaySleepButton = new Button("Go To Sleep");
-        todaySleepButton.setOnAction(this::onSleepButtonAction);
-        othersGridPane.add(todaySleepButton, 1, 0);
-
-        Label workoutLabel = new Label("Exercise:", new FontIcon(FontAwesomeSolid.RUNNING));
-        workoutLabel.setFont(Font.font(14));
-        othersGridPane.add(workoutLabel, 0, 1);
-
-        todayExerciseButton = new Button("Start");
-        todayExerciseButton.setOnAction(this::onWorkoutButtonAction);
-        othersGridPane.add(todayExerciseButton, 1, 1);
-
-        Label weightLabel = new Label("Weight:", new FontIcon(FontAwesomeSolid.WEIGHT));
-        weightLabel.setFont(Font.font(14));
-        othersGridPane.add(weightLabel, 0, 2);
-        
-        todayWeightSpinner = new Spinner<>(new WeightSpinnerValueFactory());
-        todayWeightSpinner.setEditable(true);
-        othersGridPane.add(todayWeightSpinner, 1, 2);
-
-        return tab;
+        todayTaskTreeView.setRoot(new TreeItem<Task>(new Task("rootTask", new TaskInterval.NoInterval(), 0)));
+        todayWeightSpinner.setValueFactory(new WeightSpinnerValueFactory());
     }
 
-    private Tab createSleepTab() {
-        Tab tab = new Tab("Sleep");
-        tab.setGraphic(new FontIcon(FontAwesomeSolid.BED));
+    private void initSleepPage() {
+        sleepDateCol.setCellValueFactory(sleep -> new SimpleObjectProperty<>(sleep.getValue().end().toLocalDate().minusDays(1)));
+        sleepStartCol.setCellValueFactory(sleep -> new SimpleObjectProperty<>(sleep.getValue().start().toLocalTime()));
+        sleepEndCol.setCellValueFactory(sleep -> new SimpleObjectProperty<>(sleep.getValue().end().toLocalTime()));
+        sleepLengthCol.setCellValueFactory(sleep -> new SimpleFloatProperty(sleep.getValue().length().toMinutes() / 60f).asObject());
 
-        GridPane sleepGridPane = new GridPane(5, 10);
-        sleepGridPane.setPadding(new Insets(20));
-        sleepGridPane.getStyleClass().add(Styles.DENSE);
-        sleepGridPane.setAlignment(Pos.CENTER_LEFT);
-        tab.setContent(sleepGridPane);
-
-        sleepButton = new Button("Start");
-        sleepButton.setOnAction(this::onSleepButtonAction);
-        sleepButton.setOnMouseClicked(this::onSleepButtonClick);
-        sleepGridPane.add(sleepButton, 0, 0);
-        GridPane.setHgrow(sleepButton, Priority.NEVER);
-
-        sleepStatusLabel = new Label("Status: not started");
-        sleepGridPane.add(sleepStatusLabel, 1, 0);
-        GridPane.setHgrow(sleepStatusLabel, Priority.ALWAYS);
-
-
-        sleepTableView = new TableView<>();
-        sleepTableView.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
-        sleepTableView.getStyleClass().add(Styles.DENSE);
-        sleepGridPane.add(sleepTableView, 0, 1, 2, 1);
-        GridPane.setVgrow(sleepTableView, Priority.ALWAYS);
-
-        sleepDateCol = new TableColumn<>("Date");
-        sleepDateCol.setCellFactory(col -> new TableCell<Sleep, LocalDate>() {
+        sleepDateCol.setCellFactory(col -> new TableCell<>() {
             @Override
             protected void updateItem(LocalDate item, boolean empty) {
                 super.updateItem(item, empty);
@@ -453,36 +343,19 @@ public class TaskTwigController {
                     setText(dateFormat.format(item));
             }
         });
-        sleepDateCol.setCellValueFactory(sleep -> new SimpleObjectProperty<>(sleep.getValue().end().toLocalDate().minusDays(1)));
+        Callback<TableColumn<Sleep, LocalTime>, TableCell<Sleep, LocalTime>> timeCellFactory = col -> new TableCell<>() {
+            @Override
+            protected void updateItem(LocalTime item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null)
+                    setText(null);
+                else
+                    setText(timeFormat.format(item));
+            }
+        };
+        sleepStartCol.setCellFactory(timeCellFactory);
+        sleepEndCol.setCellFactory(timeCellFactory);
 
-        sleepStartCol = new TableColumn<>("Start");
-        sleepStartCol.setCellFactory(column -> new timeTableCell<Sleep>(timeFormat));
-        sleepStartCol.setCellValueFactory(sleep -> new SimpleObjectProperty<>(sleep.getValue().start().toLocalTime()));
-
-        sleepEndCol = new TableColumn<>("End");
-        sleepEndCol.setCellFactory(column -> new timeTableCell<Sleep>(timeFormat));
-        sleepEndCol.setCellValueFactory(sleep -> new SimpleObjectProperty<>(sleep.getValue().end().toLocalTime()));
-
-        sleepLengthCol = new TableColumn<>("Sleep (hours)");
-        sleepLengthCol.setCellValueFactory(sleep -> new SimpleFloatProperty(sleep.getValue().length().toMinutes() / 60f).asObject());
-
-        sleepTableView.getColumns().addAll(sleepDateCol, sleepStartCol, sleepEndCol, sleepLengthCol);
-
-
-        Tab sleepLenChartTab = new Tab("Total Sleep");
-        var sleepLenNumAxis = new NumberAxis();
-        sleepLenNumAxis.setLabel("Sleep (hours)");
-        sleepLenNumAxis.setAutoRanging(true);
-        sleepLenNumAxis.setForceZeroInRange(false);
-        sleepLenChart = new AreaChart<>(new CategoryAxis(), sleepLenNumAxis);
-        sleepLenChart.setLegendVisible(false);
-        sleepLenChart.getStylesheets().add(chartStylesheet);
-        sleepLenChartTab.setContent(sleepLenChart);
-
-        Tab sleepTimeChartTab = new Tab("Sleep Times");
-        sleepStartChartData.setName("Sleep Start");
-        sleepEndChartData.setName("SleepEnd");
-        sleepTimeNumAxis = new NumberAxis("Sleep (hours)", 3.0, 11.0, 2.0);
         sleepTimeNumAxis.setTickLabelFormatter(new StringConverter<>() {
             @Override
             public String toString(Number num) {
@@ -496,80 +369,181 @@ public class TaskTwigController {
                 return localTime.until(timeChartRefTime, ChronoUnit.MINUTES) / 60f;
             }
         });
-        sleepTimeNumAxis.setAutoRanging(true);
-        sleepTimeNumAxis.setForceZeroInRange(false);
-        sleepTimeChart = new LineChart<>(new CategoryAxis(), sleepTimeNumAxis);
-        sleepTimeChart.setHorizontalZeroLineVisible(false);
-        sleepTimeChart.getStylesheets().add(chartStylesheet);
-        sleepTimeChartTab.setContent(sleepTimeChart);
-
-        TabPane chartPane = new TabPane(sleepLenChartTab, sleepTimeChartTab);
-        chartPane.setSide(Side.BOTTOM);
-        chartPane.setTabClosingPolicy(TabClosingPolicy.UNAVAILABLE);
-        sleepGridPane.add(chartPane, 0, 2, 2, 1);
-        GridPane.setVgrow(chartPane, Priority.ALWAYS);
-
-        return tab;
+        sleepStartChartData.setName("Sleep Start");
+        sleepEndChartData.setName("SleepEnd");
+        sleepVBox.getChildren().remove(sleepTimeChartPane);
     }
 
-    private Tab createExerciseTab() {
-        Tab tab = new Tab("Exercise");
-        tab.setGraphic(new FontIcon(FontAwesomeSolid.RUNNING));
-
-        GridPane exerciseGridPane = new GridPane();
-        tab.setContent(exerciseGridPane);
-
-        workoutButton = new Button("Start");
-        workoutButton.setOnAction(this::onWorkoutButtonAction);
-        workoutButton.setOnMouseClicked(this::onWorkoutButtonClick);
-        exerciseGridPane.add(workoutButton, 0, 0);
-
-        workoutStatusLabel = new Label("Status: not started");
-        exerciseGridPane.add(workoutStatusLabel, 1, 0);
-
-        Button editExerciseButton = new Button("Edit Exercises");
-        editExerciseButton.setOnAction(this::addExerciseButtonClick);
-        exerciseGridPane.add(editExerciseButton, 2, 0);
-        GridPane.setHalignment(editExerciseButton, HPos.RIGHT);
-        GridPane.setHgrow(editExerciseButton, Priority.ALWAYS);
-
-
-        workoutTableView = new TableView<>();
-        
-        workoutDateCol = new TableColumn<>("Date");
+    private void initWorkoutPage() {
         workoutDateCol.setCellValueFactory(workout -> new SimpleStringProperty(workout.getValue().start().toLocalDate().format(dateFormat)));
-
-        workoutLengthCol = new TableColumn<>("Length (minutes)");
         workoutLengthCol.setCellValueFactory(workout -> new SimpleFloatProperty(workout.getValue().length().toSeconds() / 60f).asObject());
-
-        workoutExerciseCol = new TableColumn<>("Exercises");
         workoutExerciseCol.setCellValueFactory(workout -> genWorkoutExercises(workout.getValue().exercises()));
-        
-        workoutTableView.getColumns().addAll(workoutDateCol, workoutLengthCol, workoutExerciseCol);
-        exerciseGridPane.add(workoutTableView, 0, 1, 3, 1);
-        GridPane.setVgrow(workoutTableView, Priority.ALWAYS);
-
-        return tab;
     }
 
-    private Tab createTaskTab() {
-        Tab tab = new Tab("Tasks");
-        tab.setGraphic(new FontIcon(FontAwesomeSolid.TASKS));
-
-        GridPane taskGridPane = new GridPane();
-        tab.setContent(taskGridPane);
-
-        Button newTaskButton = new Button("New Task");
-        taskGridPane.add(newTaskButton, 0, 0);
-
+    private void initTaskPage() {
         TaskContent taskDetailView = new TaskContent();
-        ScrollPane taskDetailScrollPane = new ScrollPane(taskDetailView);
-        taskDetailScrollPane.setHbarPolicy(ScrollBarPolicy.NEVER);
-        taskGridPane.add(taskDetailScrollPane, 1,1);
+        taskMasterDetailPane.setDetailNode(taskDetailView);
+        taskNameCol.setCellValueFactory(cell -> cell.getValue().valueProperty());
+        taskNameCol.setCellFactory(col -> new TreeTableCell<>() {
 
-        taskTreeTable = new TreeTableView<>(new TreeItem<>(new Task("placeholder", new TaskInterval.NoInterval(), 0)));
-        taskTreeTable.getStyleClass().add(Styles.DENSE);
-        taskTreeTable.setShowRoot(false);
+            private final DoneCheckBox checkBox = new DoneCheckBox(done -> {
+                if (getItem() != null && !isEmpty()) {
+                    getItem().setDone(done);
+                }
+            });
+
+            @Override
+            protected void updateItem(Task item, boolean empty) {
+                super.updateItem(item, empty);
+
+                textProperty().unbind();
+                checkBox.selectedProperty().unbind();
+
+                if (empty || item == null) {
+                    setText(null);
+                    setGraphic(null);
+                }
+                else {
+                    textProperty().bind(item.nameProperty());
+                    checkBox.selectedProperty().bind(item.doneObservable());
+                    setGraphic(checkBox);
+                }
+            }
+        });
+        taskPriorityCol.setCellValueFactory(cell -> cell.getValue().getValue().priorityProperty().asObject());
+        taskPriorityCol.setCellFactory(col -> new TreeTableCell<>() {
+            {
+                setAlignment(Pos.CENTER);
+            }
+            @Override
+            protected void updateItem(Integer item, boolean empty) {
+                super.updateItem(item, empty);
+
+                if (empty || item == null) {
+                    setText(null);
+                    setBackground(Background.EMPTY);
+                }
+                else {
+                    setText(item.toString());
+                    setBackground(Background.fill(Color.valueOf(Task.getPriorityColor(item))));
+                }
+            }
+        });
+        taskDateTimeCol.setCellFactory(column -> new TreeTableCell<>() {
+            private Subscription sub = Subscription.EMPTY;
+
+            @Override
+            protected void updateItem(TaskInterval item, boolean empty) {
+                super.updateItem(item, empty);
+
+                sub.unsubscribe();
+                sub = Subscription.EMPTY;
+
+                if (empty || item == null)
+                    setText(null);
+
+                else {
+                    Task task = getTableRow().getItem();
+                    setDateTimeText(task);
+                    sub = task.dueTimeProperty().subscribe(dueTime -> setDateTimeText(task)).and(sub);
+                    sub = item.nextDueObservable().subscribe(nextDue -> setDateTimeText(task)).and(sub);
+                }
+            }
+
+            private void setDateTimeText(Task task) {
+                if (task.getInterval().nextDue() == null) {
+                    setText(null);
+                }
+                else {
+                    String strVal = dateFormat.format(task.getInterval().nextDue());
+
+                    if (task.getDueTime() != null) {
+                        strVal += " " + timeFormat.format(task.getDueTime());
+                    }
+
+                    setText(strVal);
+                }
+            }
+        });
+        taskDateTimeCol.setCellValueFactory(cell -> cell.getValue().getValue().intervalProperty());
+        taskRepeatCol.setCellFactory(column -> new TreeTableCell<>() {
+            private Subscription itemSubs = Subscription.EMPTY;
+
+            @Override
+            protected void updateItem(TaskInterval item, boolean empty) {
+                super.updateItem(item, empty);
+
+                itemSubs.unsubscribe();
+                itemSubs = Subscription.EMPTY;
+
+                if (empty || item == null)
+                    setText(null);
+
+                else {
+                    switch (item) {
+                        case TaskInterval.DayInterval day -> {
+                            setDayText(day);
+                            itemSubs = day.intervalProperty().subscribe(newValue -> setDayText(day)).and(itemSubs);
+                            itemSubs = day.repeatFromLastDoneProperty().subscribe(newValue -> setDayText(day)).and(itemSubs);
+                        }
+                        case TaskInterval.WeekInterval week -> {
+                            setWeekText(week);
+                            itemSubs = week.dayOfWeekMapProperty().subscribe(newValue -> setWeekText(week)).and(itemSubs);
+                        }
+                        case TaskInterval.MonthInterval month -> {
+                            setMonthText(month);
+                            ListChangeListener<Integer> listener = change -> setMonthText(month);
+                            month.getDatesObservable().addListener(listener);
+                            itemSubs = itemSubs.and(() -> month.getDatesObservable().removeListener(listener));
+                        }
+                        default -> setText(null);
+                    }
+                }
+            }
+
+            private void setDayText(TaskInterval.DayInterval day) {
+                if (day.isRepeatFromLastDone())
+                    setText("Every " + day.getInterval() + " days after done");
+                else
+                    setText("Every " + day.getInterval() + " days");
+            }
+
+            private void setWeekText(TaskInterval.WeekInterval week) {
+                StringBuilder retVal = new StringBuilder("weekly:");
+                for (DayOfWeek day : DayOfWeek.values()) {
+                    if (week.isDueOn(day)) {
+                        retVal.append(" ").append(dayOfWeekShorthand[day.ordinal()]);
+                    }
+                }
+                setText(retVal.toString());
+            }
+
+            private void setMonthText(TaskInterval.MonthInterval month) {
+                if (month.getDates().isEmpty()) {
+                    setText(null);
+                } else {
+                    StringBuilder dateStr = new StringBuilder("month: ");
+
+                    for (Integer date : month.getDates()) {
+                        dateStr.append(date);
+                        dateStr.append(", ");
+                    }
+
+                    setText(dateStr.substring(0, dateStr.length() - 2));
+                }
+            }
+        });
+        taskRepeatCol.setCellValueFactory(cell -> cell.getValue().getValue().intervalProperty());
+        taskTreeTable.getSelectionModel().selectedItemProperty().subscribe(item -> {
+            if (item == null) {
+                taskDetailView.setTask(null);
+                taskMasterDetailPane.setShowDetailNode(false);
+            }
+            else {
+                taskDetailView.setTask(item.getValue());
+                taskMasterDetailPane.setShowDetailNode(true);
+            }
+        });
         taskTreeTable.setRowFactory(table -> new TreeTableRow<>() {
             private Subscription sub = Subscription.EMPTY;
             private final ContextMenu contextMenu;
@@ -738,200 +712,12 @@ public class TaskTwigController {
                 }
             }
         });
-        taskTreeTable.getSelectionModel().selectedItemProperty().subscribe(item -> {
-            if (item == null) {
-                taskDetailView.setTask(null);
-            }
-            else {
-                taskDetailView.setTask(item.getValue());
-            }
-        });
-
-        taskNameCol = new TreeTableColumn<>("Name");
-        taskNameCol.setCellValueFactory(cell -> cell.getValue().valueProperty());
-        taskNameCol.setCellFactory(col -> new TreeTableCell<>() {
-
-            private final DoneCheckBox checkBox = new DoneCheckBox(done -> {
-                if (getItem() != null && !isEmpty()) {
-                    getItem().setDone(done);
-                }
-            });
-
-            @Override
-            protected void updateItem(Task item, boolean empty) {
-                super.updateItem(item, empty);
-
-                textProperty().unbind();
-                checkBox.selectedProperty().unbind();
-
-                if (empty || item == null) {
-                    setText(null);
-                    setGraphic(null);
-                }
-                else {
-                    textProperty().bind(item.nameProperty());
-                    checkBox.selectedProperty().bind(item.doneObservable());
-                    setGraphic(checkBox);
-                }
-            }
-        });
-        
-        taskPriorityCol = new TreeTableColumn<>("Priority");
-        taskPriorityCol.setCellValueFactory(cell -> cell.getValue().getValue().priorityProperty().asObject());
-        taskPriorityCol.setCellFactory(col -> new TreeTableCell<>() {
-            {
-                setAlignment(Pos.CENTER);
-            }
-            @Override
-            protected void updateItem(Integer item, boolean empty) {
-                super.updateItem(item, empty);
-
-                if (empty || item == null) {
-                    setText(null);
-                    setBackground(Background.EMPTY);
-                }
-                else {
-                    setText(item.toString());
-                    setBackground(Background.fill(Color.valueOf(Task.getPriorityColor(item))));
-                }
-            }
-        });
-        
-        taskDateTimeCol = new TreeTableColumn<>("Due Date/Time");
-        taskDateTimeCol.setCellFactory(column -> new TreeTableCell<>() {
-            private Subscription sub = Subscription.EMPTY;
-
-            @Override
-            protected void updateItem(TaskInterval item, boolean empty) {
-                super.updateItem(item, empty);
-
-                sub.unsubscribe();
-                sub = Subscription.EMPTY;
-
-                if (empty || item == null)
-                    setText(null);
-
-                else {
-                    Task task = getTableRow().getItem();
-                    setDateTimeText(task);
-                    sub = task.dueTimeProperty().subscribe(dueTime -> setDateTimeText(task)).and(sub);
-                    sub = item.nextDueObservable().subscribe(nextDue -> setDateTimeText(task)).and(sub);
-                }
-            }
-
-            private void setDateTimeText(Task task) {
-                if (task.getInterval().nextDue() == null) {
-                    setText(null);
-                }
-                else {
-                    String strVal = dateFormat.format(task.getInterval().nextDue());
-
-                    if (task.getDueTime() != null) {
-                        strVal += " " + timeFormat.format(task.getDueTime());
-                    }
-
-                    setText(strVal);
-                }
-            }
-        });
-        taskDateTimeCol.setCellValueFactory(cell -> cell.getValue().getValue().intervalProperty());
-        
-        taskRepeatCol = new TreeTableColumn<>("Repeat");
-        taskRepeatCol.setCellFactory(column -> new TreeTableCell<>() {
-            private Subscription itemSubs = Subscription.EMPTY;
-
-            @Override
-            protected void updateItem(TaskInterval item, boolean empty) {
-                super.updateItem(item, empty);
-
-                itemSubs.unsubscribe();
-                itemSubs = Subscription.EMPTY;
-
-                if (empty || item == null)
-                    setText(null);
-
-                else {
-                    switch (item) {
-                        case TaskInterval.DayInterval day -> {
-                            setDayText(day);
-                            itemSubs = day.intervalProperty().subscribe(newValue -> setDayText(day)).and(itemSubs);
-                            itemSubs = day.repeatFromLastDoneProperty().subscribe(newValue -> setDayText(day)).and(itemSubs);
-                        }
-                        case TaskInterval.WeekInterval week -> {
-                            setWeekText(week);
-                            itemSubs = week.dayOfWeekMapProperty().subscribe(newValue -> setWeekText(week)).and(itemSubs);
-                        }
-                        case TaskInterval.MonthInterval month -> {
-                            setMonthText(month);
-                            ListChangeListener<Integer> listener = change -> setMonthText(month);
-                            month.getDatesObservable().addListener(listener);
-                            itemSubs = itemSubs.and(() -> month.getDatesObservable().removeListener(listener));
-                        }
-                        default -> setText(null);
-                    }
-                }
-            }
-
-            private void setDayText(TaskInterval.DayInterval day) {
-                if (day.isRepeatFromLastDone())
-                    setText("Every " + day.getInterval() + " days after done");
-                else
-                    setText("Every " + day.getInterval() + " days");
-            }
-
-            private void setWeekText(TaskInterval.WeekInterval week) {
-                StringBuilder retVal = new StringBuilder("weekly:");
-                for (DayOfWeek day : DayOfWeek.values()) {
-                    if (week.isDueOn(day)) {
-                        retVal.append(" ").append(dayOfWeekShorthand[day.ordinal()]);
-                    }
-                }
-                setText(retVal.toString());
-            }
-
-            private void setMonthText(TaskInterval.MonthInterval month) {
-                if (month.getDates().isEmpty()) {
-                    setText(null);
-                } else {
-                    StringBuilder dateStr = new StringBuilder("month: ");
-
-                    for (Integer date : month.getDates()) {
-                        dateStr.append(date);
-                        dateStr.append(", ");
-                    }
-
-                    setText(dateStr.substring(0, dateStr.length() - 2));
-                }
-            }
-        });
-        taskRepeatCol.setCellValueFactory(cell -> cell.getValue().getValue().intervalProperty());
-
-        taskTreeTable.getColumns().addAll(taskNameCol, taskPriorityCol, taskDateTimeCol, taskRepeatCol);
-        taskTreeTable.setTreeColumn(taskNameCol);
-        taskGridPane.add(taskTreeTable, 0, 1);
-        GridPane.setHgrow(taskTreeTable, Priority.ALWAYS);
-        GridPane.setVgrow(taskTreeTable, Priority.ALWAYS);
-        
-        return tab;
+        taskTreeTable.setRoot(new TreeItem<>(new Task("placeholder", new TaskInterval.NoInterval(), 0)));
     }
 
-    private Tab createRoutineTab() {
-        Tab tab = new Tab("Routines");
-        tab.setGraphic(new FontIcon(FontAwesomeSolid.CALENDAR_CHECK));
-
-        GridPane routineGridPane = new GridPane();
-        tab.setContent(routineGridPane);
-
-        routineButton = new Button("New Routine");
-        routineButton.setOnAction(this::createRoutine);
-        routineGridPane.add(routineButton, 0, 0);
-
+    private void initRoutinePage() {
         RoutineContent routineDetailView = new RoutineContent();
-        ScrollPane routineDetailScrollPane = new ScrollPane(routineDetailView);
-        routineDetailScrollPane.setHbarPolicy(ScrollBarPolicy.NEVER);
-        routineGridPane.add(routineDetailScrollPane, 1, 1);
-
-        routineTable = new TableView<>();
+        routineMasterDetailPane.setDetailNode(routineDetailView);
         routineTable.setRowFactory(table -> {
             TableRow<Routine> row = new TableRow<>();
             row.setOnMouseClicked(event -> {
@@ -1003,17 +789,16 @@ public class TaskTwigController {
         routineTable.getSelectionModel().selectedItemProperty().subscribe(item -> {
             if (item == null) {
                 routineDetailView.setRoutine(null);
+                routineMasterDetailPane.setShowDetailNode(false);
             }
             else {
                 routineDetailView.setRoutine(item);
+                routineMasterDetailPane.setShowDetailNode(true);
             }
         });
-        
-        routineNameCol = new TableColumn<>("Name");
         routineNameCol.setCellValueFactory(routine -> routine.getValue().name());
-
-        routineIntervalCol = new TableColumn<>("Interval");
         routineIntervalCol.setCellValueFactory(routine -> routine.getValue().interval());
+        routineDueCol.setCellValueFactory(routine -> routine.getValue().dueTime());
         routineIntervalCol.setCellFactory(col -> new TableCell<>() {
             private Subscription itemSubs = Subscription.EMPTY;
 
@@ -1060,22 +845,11 @@ public class TaskTwigController {
                     setText("Every " + day.getInterval() + " days");
             }
         });
-        
-        routineDueCol = new TableColumn<>("Due Time");
-        routineDueCol.setCellValueFactory(routine -> routine.getValue().dueTime());
         routineDueCol.setCellFactory(column -> new timeTableCell<>(timeFormat) {});
-
-        routineTable.getColumns().addAll(routineNameCol, routineIntervalCol, routineDueCol);
-        routineGridPane.add(routineTable, 0, 1);
-
-        return tab;
     }
 
-    private Tab createListTab() {
-        Tab tab = new Tab("Lists");
-        tab.setGraphic(new FontIcon(FontAwesomeSolid.LIST));
-
-        listTree = new TreeView<>(new TreeItem<>());
+    private void initListPage() {
+        listTree.setRoot(new TreeItem<>());
         listTree.getRoot().setExpanded(true);
         listTree.setCellFactory(treeView -> new TreeCell<>() {
             private Subscription subscription = Subscription.EMPTY;
@@ -1187,19 +961,10 @@ public class TaskTwigController {
         });
         listTree.setContextMenu(new ContextMenu(addItem));
         listTree.addEventFilter(MouseEvent.MOUSE_PRESSED, Event::consume);
-
-        tab.setContent(listTree);
-        return tab;
     }
 
-    private Tab createJournalTab() {
-        Tab tab = new Tab("Journals");
-        tab.setGraphic(new FontIcon(FontAwesomeSolid.BOOK));
-
-        GridPane journalGridPane = new GridPane();
-        tab.setContent(journalGridPane);
-
-        journalListView = new ListView<>();
+    private void initJournalPage() {
+        journalWeightSpinner.setValueFactory(new WeightSpinnerValueFactory());
         journalListView.setCellFactory(list -> new ListCell<>() {
             @Override
             protected void updateItem(LocalDate item, boolean empty) {
@@ -1231,123 +996,24 @@ public class TaskTwigController {
                 journalTextArea.setPromptText("Type journal here...");
             }
         });
-        journalGridPane.add(journalListView, 0, 0,1, 4);
 
-        journalTextArea = new TextArea();
-        journalTextArea.setPromptText("Select a date on the left to see journal");
-        journalTextArea.setWrapText(true);
-        journalGridPane.add(journalTextArea, 1, 0, 1, 4);
-
-        Label weightLabel = new Label("Weight:");
-        weightLabel.setFont(Font.font(16));
-        journalGridPane.add(weightLabel, 2, 0);
-
-        journalWeightSpinner = new Spinner<>(new WeightSpinnerValueFactory());
-        journalWeightSpinner.setEditable(true);
-        journalGridPane.add(journalWeightSpinner, 2, 1);
-        
-        journalRoutineList = new ListView<>();
         journalRoutineList.setSelectionModel(null);
-        TitledPane routinePane = new TitledPane("Completed Routines", journalRoutineList);
-        routinePane.getStyleClass().add(Styles.DENSE);
-        journalGridPane.add(routinePane, 2, 2);
-
-        journalTaskList = new ListView<>();
         journalTaskList.setSelectionModel(null);
-        TitledPane taskPane = new TitledPane("Completed Tasks", journalTaskList);
-        taskPane.getStyleClass().add(Styles.DENSE);
-        journalGridPane.add(taskPane, 2, 3);
-
-        return tab;
     }
 
-    private Tab createSettingsTab() {
-        Tab tab = new Tab("Settings");
-        tab.setGraphic(new FontIcon(FontAwesomeSolid.COG));
-
-        Label settingsLabel = new Label("Settings");
-        settingsLabel.setFont(Font.font("System Bold", 21));
-
-        Tile startOfDayTile = new Tile(
-            "Start of day:",
-            "The time of the day which separates between late night and early morning",
-            new FontIcon(FontAwesomeSolid.SUN)
-        );
-        settingsDayStartSpinner = new Spinner<>();
+    private void initSettingsPage() {
         new TimeSpinner(settingsDayStartSpinner, null);
-        startOfDayTile.setAction(settingsDayStartSpinner);
-        startOfDayTile.setActionHandler(settingsDayStartSpinner::requestFocus);
-
-        Tile startOfNightTile = new Tile(
-            "Start of night",
-            "The time of day which separates late afternoon/evening from early night",
-            new FontIcon(FontAwesomeSolid.MOON)
-        );
-        settingsNightStartSpinner = new Spinner<>();
         new TimeSpinner(settingsNightStartSpinner, null);
-        startOfNightTile.setAction(settingsNightStartSpinner);
-        startOfNightTile.setActionHandler(settingsNightStartSpinner::requestFocus);
-        
-        Tile autoSyncIntervalTile = new Tile(
-            "Auto Save/Sync Interval",
-            "How often a save/sync is triggered in the background (in seconds)",
-            new FontIcon(FontAwesomeSolid.HISTORY)
-        );
-        settingsIntervalSpinner = new Spinner<>(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 30*60));
+
+        settingsIntervalSpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 30*60));
         settingsIntervalSpinner.getValueFactory().valueProperty().subscribe(interval ->
-            backgroundService.setPeriod(Duration.seconds(interval)));
-        settingsIntervalSpinner.setPrefWidth(110);
-        autoSyncIntervalTile.setAction(settingsIntervalSpinner);
-        autoSyncIntervalTile.setActionHandler(settingsIntervalSpinner::requestFocus);
+                backgroundService.setPeriod(Duration.seconds(interval)));
 
-        Tile autoSyncToggleTile = new Tile(
-            "Auto Sync Toggle",
-            "Whether to automatically sync with Dropbox when data is saved periodically",
-            new FontIcon(FontAwesomeSolid.CLOUD)
-        );
-        settingsAutoSyncToggle = new ToggleSwitch();
         settingsAutoSyncToggle.selectedProperty().subscribe((autoSync) -> twig.autoSyncProperty().set(autoSync));
-        autoSyncToggleTile.setAction(settingsAutoSyncToggle);
-        autoSyncToggleTile.setActionHandler(settingsAutoSyncToggle::fire);
-
-        Tile dbxTile = new Tile(
-            "Dropbox Account",
-            "Connect a Dropbox account to sync data to the cloud and between devices",
-            new FontIcon(FontAwesomeBrands.DROPBOX)
-        );
-        settingsDbxName = new Label("dbx account here");
-        settingsDbxButton = new Button("Dbx Connect Button");
-        settingsDbxButton.setOnAction(this::onDbxButton);
-        VBox dbxVBox = new VBox(settingsDbxName, settingsDbxButton);
-        dbxVBox.setSpacing(10);
-        dbxVBox.setAlignment(Pos.CENTER);
-        dbxTile.setAction(dbxVBox);
-        dbxTile.setActionHandler(settingsDbxButton::fire);
-
-        VBox settingsVBox = new VBox(
-            settingsLabel,
-            new Separator(),
-            startOfDayTile,
-            startOfNightTile,
-            autoSyncIntervalTile,
-            autoSyncToggleTile,
-            new Separator(),
-            dbxTile
-        );
-        settingsVBox.setAlignment(Pos.TOP_CENTER);
-        settingsVBox.setPadding(new Insets(20));
-        ScrollPane settingsScrollPane = new ScrollPane(settingsVBox);
-        settingsScrollPane.setFitToWidth(true);
-        VBox outerVBox = new VBox(settingsScrollPane);
-        outerVBox.setAlignment(Pos.TOP_CENTER);
-        outerVBox.setFillWidth(false);
-        tab.setContent(outerVBox);
 
 
         twig.dbxClient().subscribe(_ -> updateDbxAccountState());
         updateDbxAccountState();
-
-        return tab;
     }
 
     private void attachTwigData() {
@@ -1433,10 +1099,6 @@ public class TaskTwigController {
 //        }
 
 //        backgroundThread.interrupt();
-    }
-
-    public Pane getRoot() {
-        return rootPane;
     }
 
     public void setApplication(Application application) {
@@ -1552,6 +1214,18 @@ public class TaskTwigController {
                 }
             }
         }
+    }
+
+    @FXML
+    private void showSleepLenChart() {
+        sleepVBox.getChildren().remove(sleepTimeChartPane);
+        sleepVBox.getChildren().add(sleepLenChartPane);
+    }
+    
+    @FXML
+    private void showSleepTimeChart() {
+        sleepVBox.getChildren().remove(sleepLenChartPane);
+        sleepVBox.getChildren().add(sleepTimeChartPane);
     }
 
     private float convertTimeToChartNum(LocalTime time) {
@@ -1777,7 +1451,7 @@ public class TaskTwigController {
     }
 
     @FXML
-    protected void createRoutine(ActionEvent event) {
+    protected void createRoutine() {
         Routine newRoutine = new Routine("", null, new RoutineInterval.DailyInterval());
         twig.routineList().add(newRoutine);
         routineTable.getSelectionModel().clearSelection();
@@ -1791,16 +1465,12 @@ public class TaskTwigController {
 
             settingsDbxName.setText("No active account");
             settingsDbxButton.setText("Connect Account");
-            settingsDbxButton.getStyleClass().remove(Styles.DANGER);
-            settingsDbxButton.getStyleClass().add(Styles.ACCENT);
         }
         else {
             syncButton.setDisable(false);
             syncLabel.setText("Not yet synced");
-            
+
             settingsDbxButton.setText("Logout");
-            settingsDbxButton.getStyleClass().remove(Styles.ACCENT);
-            settingsDbxButton.getStyleClass().add(Styles.DANGER);
             try {
                 settingsDbxName.setText(twig.getDbxAccountName());
             }
@@ -1865,10 +1535,6 @@ public class TaskTwigController {
     }
 
     public void onDbxButton() {
-        onDbxButton(null);
-    }
-
-    private void onDbxButton(ActionEvent event) {
         if (twig.dbxClient().getValue() == null) {
             dbxAuthorize();
         }
@@ -1920,7 +1586,8 @@ public class TaskTwigController {
         return result.isPresent() && result.get() == ButtonType.YES;
     }
 
-    private void onSyncButton(ActionEvent event) {
+    @FXML
+    protected void onSyncButton() {
         backgroundService.syncNow();
     }
 

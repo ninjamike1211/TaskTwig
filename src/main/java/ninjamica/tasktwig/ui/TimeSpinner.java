@@ -31,6 +31,7 @@ public class TimeSpinner {
         this.timeSpinner = spinner;
         spinner.setEditable(true);
         spinner.getEditor().setAlignment(Pos.CENTER_RIGHT);
+        spinner.setPrefWidth(110);
 
         SpinnerValueFactory<LocalTime> valueFactory = new SpinnerValueFactory<>() {
             @Override

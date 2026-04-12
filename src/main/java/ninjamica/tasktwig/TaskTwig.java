@@ -200,7 +200,7 @@ public class TaskTwig implements Serializable {
     }
 
     static <U> U callWithFXSafety(Supplier<U> supplier) {
-        if (TaskTwig.notFXThread)
+        if (!Platform.isFxApplicationThread() && TaskTwig.notFXThread)
             return CompletableFuture.supplyAsync(supplier, Platform::runLater).join();
         else
             return supplier.get();

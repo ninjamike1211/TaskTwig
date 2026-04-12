@@ -8,9 +8,3 @@
 .default-color1.chart-line-symbol { -fx-background-color: rgb(15, 148, 15), rgb(133, 186, 133) ; -fx-scale-x: 0.75; -fx-scale-y: 0.75 }
 .default-color1.chart-series-line { -fx-stroke: rgb(15, 148, 15); -fx-stroke-width: 2px }
 
-
-.chart-horizontal-grid-lines { -fx-stroke: gray }
-.chart-vertical-grid-lines { -fx-stroke: gray }
-
-.axis-tick-mark { -fx-stroke: gray }
-.axis-minor-tick-mark { -fx-stroke: gray }

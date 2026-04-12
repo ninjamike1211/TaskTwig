@@ -12,6 +12,8 @@ module ninjamica.tasktwig.tasktwig {
     requires transitive dropbox.core.sdk;
     requires java.desktop;
     requires jdk.jdi;
+    requires org.kordamp.ikonli.javafx;
+    requires org.kordamp.ikonli.fontawesome6;
 
 
     opens ninjamica.tasktwig to javafx.fxml;

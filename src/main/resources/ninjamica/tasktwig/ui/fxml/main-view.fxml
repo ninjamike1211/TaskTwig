@@ -31,11 +31,11 @@
 <?import javafx.scene.paint.Color?>
 <?import javafx.scene.text.Font?>
 <?import org.controlsfx.control.MasterDetailPane?>
-<?import org.controlsfx.control.ToggleSwitch?>
+<?import atlantafx.base.controls.ToggleSwitch?>
 
-<VBox fx:id="rootPane" prefHeight="670.0" prefWidth="910.0" stylesheets="@dark-theme.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ninjamica.tasktwig.ui.TaskTwigController">
+<VBox fx:id="rootPane" prefHeight="670.0" prefWidth="910.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ninjamica.tasktwig.ui.TaskTwigController">
    <children>
-      <TabPane rotateGraphic="true" stylesheets="@dark-theme.css" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
+      <TabPane rotateGraphic="true" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
         <tabs>
             <Tab closable="false" text="Today">
               <content>
@@ -79,7 +79,7 @@
                               </InnerShadow>
                            </effect>
                         </TextArea>
-                        <GridPane alignment="CENTER" hgap="3.0" style="-fx-background-color: -fx-control-inner-background; -fx-border-color: black;" vgap="15.0" GridPane.columnIndex="2" GridPane.hgrow="NEVER" GridPane.rowSpan="2">
+                        <GridPane alignment="CENTER" hgap="3.0" style="-fx-border-color: black;" vgap="15.0" GridPane.columnIndex="2" GridPane.hgrow="NEVER" GridPane.rowSpan="2">
                            <columnConstraints>
                               <ColumnConstraints halignment="RIGHT" hgrow="ALWAYS" minWidth="10.0" />
                               <ColumnConstraints halignment="LEFT" hgrow="ALWAYS" minWidth="10.0" />
@@ -144,7 +144,7 @@
                                     <Label fx:id="sleepStatusLabel" layoutX="85.0" layoutY="4.0" text="Status: not started" />
                                  </children>
                               </AnchorPane>
-                              <TableView fx:id="sleepTableView" VBox.vgrow="ALWAYS">
+                              <TableView fx:id="sleepTableView" styleClass="dense" VBox.vgrow="ALWAYS">
                                 <columns>
                                   <TableColumn fx:id="sleepDateCol" prefWidth="158.0" sortType="DESCENDING" text="Date" />
                                   <TableColumn fx:id="sleepStartCol" prefWidth="107.0" text="Start" />
@@ -203,7 +203,7 @@
                                     <Insets bottom="15.0" />
                                  </padding>
                               </AnchorPane>
-                              <TableView fx:id="workoutTableView" prefHeight="277.0" prefWidth="522.0" VBox.vgrow="ALWAYS">
+                              <TableView fx:id="workoutTableView" styleClass="dense" prefHeight="277.0" prefWidth="522.0" VBox.vgrow="ALWAYS">
                                  <columns>
                                     <TableColumn fx:id="workoutDateCol" prefWidth="105.0" text="Date" />
                                     <TableColumn fx:id="workoutLengthCol" prefWidth="123.0" text="Length (minutes)" />
@@ -231,7 +231,7 @@
                         </Label>
                         <MasterDetailPane fx:id="taskMasterDetailPane" dividerPosition="0.74" layoutX="17.0" layoutY="65.0" prefHeight="525.0" prefWidth="600.0" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="20.0" AnchorPane.rightAnchor="20.0" AnchorPane.topAnchor="60.0">
                             <masterNode>
-                                <TreeTableView fx:id="taskTreeTable" layoutX="186.0" layoutY="71.0" prefHeight="365.0" prefWidth="574.0" showRoot="false" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="20.0" AnchorPane.rightAnchor="20.0" AnchorPane.topAnchor="65.0">
+                                <TreeTableView fx:id="taskTreeTable" styleClass="dense" layoutX="186.0" layoutY="71.0" prefHeight="365.0" prefWidth="574.0" showRoot="false" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="20.0" AnchorPane.rightAnchor="20.0" AnchorPane.topAnchor="65.0">
                                     <columns>
                                         <TreeTableColumn fx:id="taskNameCol" minWidth="90.0" prefWidth="277.0" text="Name" />
                                     <TreeTableColumn fx:id="taskPriorityCol" maxWidth="54.0" minWidth="54.0" prefWidth="54.0" style="-fx-text-fill: black;" text="Priority" />
@@ -255,7 +255,7 @@
                         <Button fx:id="routineButton" layoutX="20.0" layoutY="35.0" mnemonicParsing="false" onAction="#createRoutine" text="New Routine +" AnchorPane.leftAnchor="20.0" AnchorPane.topAnchor="20.0" />
                         <MasterDetailPane fx:id="routineMasterDetailPane" dividerPosition="0.74" layoutX="125.0" layoutY="54.0" prefHeight="261.0" prefWidth="226.0" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="20.0" AnchorPane.rightAnchor="20.0" AnchorPane.topAnchor="60.0">
                             <masterNode>
-                                <TableView fx:id="routineTable" layoutX="119.0" layoutY="80.0" prefHeight="428.0" prefWidth="616.0" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="20.0" AnchorPane.rightAnchor="20.0" AnchorPane.topAnchor="80.0">
+                                <TableView fx:id="routineTable" styleClass="dense" layoutX="119.0" layoutY="80.0" prefHeight="428.0" prefWidth="616.0" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="20.0" AnchorPane.rightAnchor="20.0" AnchorPane.topAnchor="80.0">
                                     <columns>
                                         <TableColumn fx:id="routineNameCol" editable="false" prefWidth="203.0" sortable="false" text="Name" />
                                         <TableColumn fx:id="routineIntervalCol" editable="false" prefWidth="201.0" sortable="false" text="Interval" />
@@ -303,13 +303,13 @@
                               </InnerShadow>
                            </effect>
                         </TextArea>
-                        <ListView fx:id="journalListView" layoutX="80.0" layoutY="123.0" prefHeight="361.0" prefWidth="200.0" AnchorPane.bottomAnchor="30.0" AnchorPane.leftAnchor="30.0" AnchorPane.topAnchor="30.0" />
+                        <ListView fx:id="journalListView" styleClass="dense" layoutX="80.0" layoutY="123.0" prefHeight="361.0" prefWidth="200.0" AnchorPane.bottomAnchor="30.0" AnchorPane.leftAnchor="30.0" AnchorPane.topAnchor="30.0" />
                         <VBox alignment="TOP_CENTER" layoutX="466.0" layoutY="38.0" prefHeight="562.0" prefWidth="162.0" spacing="10.0" AnchorPane.bottomAnchor="30.0" AnchorPane.rightAnchor="20.0" AnchorPane.topAnchor="30.0">
                            <children>
-                              <GridPane alignment="CENTER" hgap="3.0" minHeight="60.0" style="-fx-background-color: -fx-control-inner-background; -fx-border-color: black;" vgap="3.0">
+                              <GridPane alignment="CENTER" hgap="3.0" minHeight="60.0" style="-fx-border-color: black;" vgap="3.0">
                                  <columnConstraints>
                                     <ColumnConstraints hgrow="ALWAYS" minWidth="10.0" />
-                                    <ColumnConstraints hgrow="NEVER" minWidth="10.0" />
+                                    <ColumnConstraints hgrow="NEVER" minWidth="16.0" />
                                  </columnConstraints>
                                  <rowConstraints>
                                     <RowConstraints minHeight="10.0" vgrow="SOMETIMES" />
@@ -328,7 +328,7 @@
                                     <Insets bottom="5.0" left="10.0" right="10.0" top="2.0" />
                                  </padding>
                               </GridPane>
-                            <TitledPane text="Completed Routines" VBox.vgrow="SOMETIMES">
+                            <TitledPane text="Completed Routines" styleClass="dense" VBox.vgrow="SOMETIMES">
                                  <content>
                                     <AnchorPane style="-fx-padding: 0;">
                                        <children>
@@ -340,7 +340,7 @@
                                     <Font name="System Bold" size="13.0" />
                                  </font>
                             </TitledPane>
-                            <TitledPane text="Completed Tasks" VBox.vgrow="SOMETIMES">
+                            <TitledPane text="Completed Tasks" styleClass="dense" VBox.vgrow="SOMETIMES">
                                  <content>
                                     <AnchorPane style="-fx-padding: 0;">
                                        <children>
@@ -419,7 +419,7 @@
                               </Label>
                               <Spinner fx:id="settingsDayStartSpinner" prefWidth="100.0" GridPane.columnIndex="1" GridPane.rowIndex="3" />
                               <Spinner fx:id="settingsNightStartSpinner" prefWidth="100.0" GridPane.columnIndex="1" GridPane.rowIndex="4" />
-                              <ToggleSwitch fx:id="settingsAutoSyncToggle" prefHeight="20.0" prefWidth="37.0" GridPane.columnIndex="1" GridPane.rowIndex="6" />
+                              <ToggleSwitch fx:id="settingsAutoSyncToggle" GridPane.columnIndex="1" GridPane.rowIndex="6" />
                               <Label text="Auto save/sync interval:" GridPane.rowIndex="5">
                                   <font>
                                       <Font name="System Bold" size="13.0" />
