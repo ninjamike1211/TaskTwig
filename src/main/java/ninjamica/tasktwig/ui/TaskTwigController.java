@@ -672,99 +672,6 @@ public class TaskTwigController {
         Tab tab = new Tab("Tasks");
         tab.setGraphic(new FontIcon(FontAwesomeSolid.TASKS));
 
-//        taskTreeTableView = new TreeTableView<>(new TreeItem<>());
-//        taskTreeTableView.setRowFactory(treeView -> new TreeTableRow<>() {
-//
-//            private Subscription subs = Subscription.EMPTY;
-//            {
-//                setOnMouseClicked(this::onMouseDoubleClick);
-//            }
-//
-//            @Override
-//            protected void updateItem(TaskInterface item, boolean empty) {
-//                super.updateItem(item, empty);
-//                subs.unsubscribe();
-//
-//                if (!empty && item != null) {
-//                    if (item instanceof Task task) {
-//                        ListChangeMapper<SubTask, TreeItem<TaskInterface>> changeMapper = new ListChangeMapper<>(
-//                                getTreeItem().getChildren(), TreeItem::new
-//                        );
-//                        changeMapper.constructFromList(task.getSubTasks());
-//                        task.getSubTasks().addListener(changeMapper);
-//
-//                        subs = () -> task.getSubTasks().removeListener(changeMapper);
-//                    }
-//                }
-//            }
-//
-//            private void onMouseDoubleClick(MouseEvent mouseEvent) {
-//                if (mouseEvent.getButton() == MouseButton.PRIMARY && mouseEvent.getClickCount() == 2) {
-//                    openTaskPanel(getItem());
-//                    mouseEvent.consume();
-//                }
-//            }
-//        });
-//        taskTreeTableView.setShowRoot(false);
-//
-//        taskListChangeMapper = new ListChangeMapper<>(
-//                taskTreeTableView.getRoot().getChildren(),
-//                TreeItem::new
-//        );
-//
-//        TreeTableColumn<TaskInterface, String> nameCol = new TreeTableColumn<>("Name");
-//        TreeTableColumn<TaskInterface, TaskCategory> categoryCol = new TreeTableColumn<>("Category");
-//        TreeTableColumn<TaskInterface, Integer> pointsCol = new TreeTableColumn<>("Points");
-//
-//        nameCol.setCellValueFactory(cellData -> cellData.getValue().getValue().nameProperty());
-//        categoryCol.setCellValueFactory(cellData -> {
-//            TaskInterface task = cellData.getValue().getValue();
-//            if (task instanceof Task twigTask) {
-//                return twigTask.categoryProperty();
-//            }
-//            else {
-//                return ((SubTask) task).getParentTask().categoryProperty();
-//            }
-//        });
-//        categoryCol.setCellFactory(col -> new TreeTableCell<>() {
-//            private Subscription subs = Subscription.EMPTY;
-//
-//            @Override
-//            protected void updateItem(TaskCategory item, boolean empty) {
-//                super.updateItem(item, empty);
-//                subs.unsubscribe();
-//
-//                if (empty || item == null) {
-//                    setText(null);
-//                    setGraphic(null);
-//                }
-//                else {
-//                    textProperty().bind(item.nameProperty());
-//                    setTextFill(item.getColor());
-//
-//                    subs = Subscription.combine(
-//                            item.colorProperty().subscribe(this::setTextFill),
-//                            textProperty()::unbind
-//                    );
-//
-//                    setGraphic(null);
-//                }
-//            }
-//        });
-//        pointsCol.setCellValueFactory(cellData -> {
-//            TaskInterface task = cellData.getValue().getValue();
-//            if (task instanceof Task twigTask) {
-//                return twigTask.pointsProperty().asObject();
-//            }
-//            else {
-//                return new SimpleObjectProperty<>(null);
-//            }
-//        });
-//
-//        taskTreeTableView.getColumns().addAll(nameCol, categoryCol, pointsCol);
-//        taskTreeTableView.setColumnResizePolicy(TreeTableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-//        VBox.setVgrow(taskTreeTableView, Priority.ALWAYS);
-
         taskListBox = new ListBox<>(
                 category -> new TaskCategoryView(
                         category,
@@ -778,6 +685,7 @@ public class TaskTwigController {
                                     new TwigInterval.NoRepeat(),
                                     null
                             );
+                            cat.getTasks().add(newTask);
                             twig.taskList().add(newTask);
                             openTaskPanel(newTask);
                         },
@@ -1631,7 +1539,7 @@ public class TaskTwigController {
                 true,
                 buttonType -> {
                     if (buttonType == deleteButton) {
-                        if (category.tasksProperty().isEmpty()) {
+                        if (category.getTasks().isEmpty()) {
                             twig.getTaskCategoryList().remove(category);
                         }
                         else {
@@ -1652,7 +1560,7 @@ public class TaskTwigController {
                                     deleteButtonType -> {
                                         if (deleteButtonType == ModalButtonType.OK) {
                                             TaskCategory newCategory = categoryChoiceBox.getValue();
-                                            category.getTasks().forEach(task -> task.setCategory(newCategory));
+                                            category.getTasksSafe().forEach(task -> task.setCategory(newCategory));
                                             twig.getTaskCategoryList().remove(category);
                                         }
                                     },

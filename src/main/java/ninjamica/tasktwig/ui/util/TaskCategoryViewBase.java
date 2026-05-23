@@ -7,6 +7,7 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.StringProperty;
 import javafx.collections.ObservableList;
 import javafx.geometry.Pos;
+import javafx.scene.Cursor;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
@@ -38,6 +39,7 @@ public class TaskCategoryViewBase extends VBox {
         expandIconPane.setPrefWidth(15);
         expandIconPane.setMinWidth(USE_PREF_SIZE);
         expandIconPane.setMaxWidth(USE_PREF_SIZE);
+        expandIconPane.setCursor(Cursor.HAND);
 
         expandIconPane.setOnMouseEntered(event -> expandIcon.setStyle("-fx-icon-color: -color-fg-default;"));
         expandIconPane.setOnMouseExited(event -> expandIcon.setStyle("-fx-icon-color: -color-fg-muted;"));
@@ -48,10 +50,8 @@ public class TaskCategoryViewBase extends VBox {
         nameBox = new HBox(10, expandIconPane, catNameText);
         nameBox.setAlignment(Pos.BASELINE_LEFT);
 
-//        taskList = new ListBox<>(taskNodeConstructor, taskNodeDestructor);
         taskList = taskBoxConstructor.get();
         taskList.setAfterChangeRunnable(this::updateTaskList);
-//        taskList.setPadding(new Insets(0, 0, 0, 20));
 
         getChildren().addAll(nameBox, taskList.getNode());
 
@@ -70,7 +70,7 @@ public class TaskCategoryViewBase extends VBox {
 
     public void setCategory(TaskCategory category, Predicate<Task> filter) {
         if (category != null) {
-            setCategory(category.tasksProperty(), filter, category.nameProperty(), category.colorProperty());
+            setCategory(category.getTasks(), filter, category.nameProperty(), category.colorProperty());
         }
         else {
             unbind();

@@ -1,9 +1,8 @@
 package ninjamica.tasktwig.ui;
 
-import atlantafx.base.theme.Styles;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.control.Button;
+import javafx.scene.Cursor;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
 import ninjamica.tasktwig.core.Task;
@@ -20,22 +19,22 @@ import java.util.function.Predicate;
 
 public class TaskCategoryView extends TaskCategoryViewBase {
 
-    private final Button newTaskButton = new Button(null, new FontIcon(FontAwesomeSolid.PLUS));
+    private final FontIcon newTaskButton = FontIcon.of(FontAwesomeSolid.PLUS, 5);
     private final Consumer<TaskCategory> onNewTask;
 
     public TaskCategoryView(Consumer<TaskCategory> onNewTask, Consumer<Task> onNewSubTask, BiConsumer<MouseEvent, TaskInterface> taskClickHandler) {
         super(() -> new DraggableListBox<>(
-                task -> {
-                    TaskBox taskBox = new TaskBox(task, onNewSubTask, taskClickHandler);
-                    taskBox.setOnMouseClicked(event -> taskClickHandler.accept(event, task));
-                    return taskBox;
-                },
+                task -> new TaskBox(task, onNewSubTask, taskClickHandler),
                 TaskBox::unbind,
                 Pos.TOP_LEFT
         ));
         this.onNewTask = onNewTask;
-        newTaskButton.getStyleClass().addAll(Styles.BUTTON_CIRCLE, Styles.FLAT);
         nameBox.getChildren().add(newTaskButton);
+
+        newTaskButton.setCursor(Cursor.HAND);
+        newTaskButton.setOnMouseEntered(event -> newTaskButton.setStyle("-fx-icon-color: -color-fg-default;"));
+        newTaskButton.setOnMouseExited(event -> newTaskButton.setStyle("-fx-icon-color: -color-fg-muted;"));
+        newTaskButton.setStyle("-fx-icon-color: -color-fg-muted;");
 
         VBox.setMargin(taskList.getNode(), new Insets(0, 0, 0, 20));
     }
@@ -47,15 +46,9 @@ public class TaskCategoryView extends TaskCategoryViewBase {
 
     public void setCategory(TaskCategory category, Predicate<Task> filter) {
         super.setCategory(category, filter);
-        newTaskButton.setOnAction(event -> onNewTask.accept(category));
-    }
-
-    protected void updateTaskList() {
-        getChildren().remove(newTaskButton);
-        super.updateTaskList();
-
-        if (expanded.get() && newTaskButton != null) {
-            getChildren().add(newTaskButton);
-        }
+        newTaskButton.setOnMouseClicked(event -> {
+            onNewTask.accept(category);
+            event.consume();
+        });
     }
 }

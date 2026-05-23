@@ -48,10 +48,10 @@ public class TaskCategory {
         categoryMap.put(name, this);
 
         todayCount = Bindings.createIntegerBinding(
-//                () -> (int) (getTasks().stream().filter(Task::isToday).count()),
+//                () -> (int) (getTasksSafe().stream().filter(Task::isToday).count()),
                 () -> {
                     int count = 0;
-                    for (Task task : getTasks()) {
+                    for (Task task : getTasksSafe()) {
                         if (task.isToday() || task.isDoneToday())
                             count++;
                     }
@@ -61,10 +61,10 @@ public class TaskCategory {
         );
 
         doneTodayCount = Bindings.createIntegerBinding(
-//                () -> (int) (getTasks().stream().filter(Task::isDoneToday).count()),
+//                () -> (int) (getTasksSafe().stream().filter(Task::isDoneToday).count()),
                 () -> {
                     int count = 0;
-                    for (Task task : getTasks()) {
+                    for (Task task : getTasksSafe()) {
                         if (task.isDoneToday())
                             count++;
                     }
@@ -87,13 +87,10 @@ public class TaskCategory {
         }
         this(name, color);
 
-        System.out.println("Built category: " + this);
-
         switch (version) {
             case 11:
                 for (JsonNode taskNode : node.get("tasks").asArray()) {
                     tasks.add(new Task(taskNode, version, this));
-                    System.out.println("Added task: " + tasks.getLast());
                 }
         }
     }
@@ -128,12 +125,12 @@ public class TaskCategory {
         return getColor().toString();
     }
 
-    public ObservableList<Task> tasksProperty() {
+    public ObservableList<Task> getTasks() {
         return tasks;
     }
 
     @JsonGetter("tasks")
-    public List<Task> getTasks() {
+    public List<Task> getTasksSafe() {
         return TaskTwig.supplyWithFXSafety(() -> new ArrayList<>(tasks));
     }
 
@@ -154,6 +151,6 @@ public class TaskCategory {
     public void hashContents(MessageDigest digest) {
         digest.update(getName().getBytes(StandardCharsets.UTF_8));
         digest.update(getColor().toString().getBytes(StandardCharsets.UTF_8));
-        getTasks().forEach(task -> task.hashContents(digest));
+        getTasksSafe().forEach(task -> task.hashContents(digest));
     }
 }

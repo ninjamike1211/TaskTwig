@@ -25,7 +25,13 @@ public class SubTaskBox extends TaskInterfaceBoxBase<SubTask> {
         super.setTask(subTask);
 
         if (subTask != null) {
-            nameBox.setOnMouseClicked(event -> subTaskClickHandler.accept(event, subTask));
+            nameText.setOnMouseClicked(event -> subTaskClickHandler.accept(event, subTask));
         }
+    }
+
+    @Override
+    public void unbind() {
+        super.unbind();
+        nameText.setOnMouseClicked(null);
     }
 }

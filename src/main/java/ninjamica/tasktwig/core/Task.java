@@ -150,7 +150,7 @@ public class Task implements TaskInterface {
         this(name, taskCategory, points, occurrencePattern, extendPattern, interval, dueTime, subTasks, expanded, lastDone);
 
         if (version == 10) {
-            this.category.get().tasksProperty().add(this);
+            this.category.get().getTasks().add(this);
         }
     }
 
@@ -480,12 +480,12 @@ public class Task implements TaskInterface {
         TaskTwig.runWithFXSafety(() -> {
             if (this.category.get() != category) {
                 if (this.category.get() != null)
-                    this.category.get().tasksProperty().remove(this);
+                    this.category.get().getTasks().remove(this);
 
                 this.category.set(category);
 
                 if (category != null)
-                    category.tasksProperty().add(this);
+                    category.getTasks().add(this);
             }
         });
     }

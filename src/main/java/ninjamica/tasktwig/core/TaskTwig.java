@@ -593,7 +593,7 @@ public class TaskTwig implements Serializable {
 //            parseJsonList(taskList, parser, node -> new Task(node, version));
 
             for (TaskCategory category : taskCategoryList) {
-                taskList.addAll(category.tasksProperty());
+                taskList.addAll(category.getTasks());
             }
 
         } catch (TwigJsonAssertException | JacksonIOException e) {

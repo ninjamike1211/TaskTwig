@@ -8,7 +8,9 @@ import javafx.scene.Node;
 import javafx.scene.SnapshotParameters;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.*;
+import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
 import org.kordamp.ikonli.javafx.FontIcon;
@@ -82,8 +84,10 @@ public class DraggableListBox<E, N extends Node> extends StackPane implements Li
             this.item = item;
             node = constructor.apply(item);
             dragIcon = new FontIcon(FontAwesomeSolid.GRIP_LINES);
+//            dragIcon.setStyle("-fx-icon-color: -color-fg-subtle;");
             dragIcon.setCursor(Cursor.OPEN_HAND);
-            getChildren().addAll(dragIcon, node);
+            dragIcon.setOpacity(0.5);
+            getChildren().addAll(dragIcon, /*new Separator(Orientation.VERTICAL),*/ node);
 
             if (nodeStyle != null) {
                 setStyle(nodeStyle);
@@ -91,6 +95,9 @@ public class DraggableListBox<E, N extends Node> extends StackPane implements Li
             if (nodeStyleClasses != null) {
                 getStyleClass().addAll(nodeStyleClasses);
             }
+
+            setOnMouseEntered(event -> dragIcon.setOpacity(1));
+            setOnMouseExited(event -> dragIcon.setOpacity(0.5));
 
             dragIcon.setOnMousePressed(this::startDrag);
 //            dragIcon.setOnDragDetected(this::startDrag);
@@ -125,17 +132,24 @@ public class DraggableListBox<E, N extends Node> extends StackPane implements Li
             if (draggedNode != null) {
                 updateDragNodePos(mouseEvent);
 
-                double dragNodeHeight = dragNodeImage.getBoundsInParent().getCenterY();
-                Bounds nodeBounds = draggedNode.getBoundsInParent();
+                Bounds dragNodeBounds = dragNodeImage.getBoundsInParent();
                 int itemIndex = getItems().indexOf(item);
 
-                if (dragNodeHeight < nodeBounds.getMinY() - getSpacing() && itemIndex > 0) {
-                    E tempItem = getItems().remove(itemIndex - 1);
-                    getItems().add(itemIndex, tempItem);
+                if (itemIndex > 0) {
+                    Bounds prevItemBounds = listBox.getChildren().get(itemIndex - 1).getBoundsInParent();
+                    if(dragNodeBounds.getMinY() < prevItemBounds.getCenterY()) {
+                        E tempItem = getItems().remove(itemIndex - 1);
+                        getItems().add(itemIndex, tempItem);
+                        return;
+                    }
                 }
-                else if (dragNodeHeight > nodeBounds.getMaxY() + getSpacing() && itemIndex < getItems().size() - 1) {
-                    E tempItem = getItems().remove(itemIndex + 1);
-                    getItems().add(itemIndex, tempItem);
+
+                if (itemIndex < getItems().size() - 1) {
+                    Bounds nextItemBounds = listBox.getChildren().get(itemIndex + 1).getBoundsInParent();
+                    if (dragNodeBounds.getMaxY() > nextItemBounds.getCenterY()) {
+                        E tempItem = getItems().remove(itemIndex + 1);
+                        getItems().add(itemIndex, tempItem);
+                    }
                 }
             }
         }

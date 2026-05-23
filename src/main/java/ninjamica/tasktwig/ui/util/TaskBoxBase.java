@@ -34,15 +34,12 @@ public class TaskBoxBase extends TaskInterfaceBoxBase<Task> {
             if (expandIcon.isVisible())
                 expanded.set(!expanded.get());
         });
-        expandIcon.setCursor(Cursor.HAND);
         expandIconPane.setOnMouseEntered(event -> expandIcon.setStyle("-fx-icon-color: -color-fg-default;"));
         expandIconPane.setOnMouseExited(event -> expandIcon.setStyle("-fx-icon-color: -color-fg-muted;"));
         expandIcon.setStyle("-fx-icon-color: -color-fg-muted;");
 
-//        subTaskBox = new ListBox<>(subTaskConstructor, subTaskDestructor);
         subTaskBox = subTaskBoxConstructor.get();
         subTaskBox.setAfterChangeRunnable(this::updateSubtaskBox);
-//        subTaskBox.setPadding(new Insets(0, 0, 0, 30));
 
 //        getChildren().setAll(new HBox(5, expandIconPane, nameBox));
         nameBox.setSpacing(5);
@@ -84,8 +81,10 @@ public class TaskBoxBase extends TaskInterfaceBoxBase<Task> {
         expandIcon.setVisible(!isEmpty);
         if (isEmpty) {
             getChildren().remove(subTaskBox.getNode());
+            expandIcon.setCursor(Cursor.DEFAULT);
         }
         else {
+            expandIcon.setCursor(Cursor.HAND);
             if (expanded.get()) {
                 expandIcon.setIconCode(FontAwesomeSolid.CARET_DOWN);
                 if(!getChildren().contains(subTaskBox.getNode()))

@@ -5,8 +5,10 @@ import javafx.geometry.Pos;
 import javafx.scene.Cursor;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
+import javafx.util.Subscription;
 import ninjamica.tasktwig.core.Task;
 import ninjamica.tasktwig.core.TaskInterface;
+import ninjamica.tasktwig.core.TwigInterval;
 import ninjamica.tasktwig.ui.util.DraggableListBox;
 import ninjamica.tasktwig.ui.util.TaskBoxBase;
 import org.kordamp.ikonli.fontawesome6.FontAwesomeSolid;
@@ -21,6 +23,8 @@ public class TaskBox extends TaskBoxBase {
     private final Consumer<Task> onNewSubTask;
     private final BiConsumer<MouseEvent, TaskInterface> taskClickHandler;
 
+    Subscription subs = Subscription.EMPTY;
+
     public TaskBox(Consumer<Task> onNewSubTask, BiConsumer<MouseEvent, TaskInterface> taskClickHandler) {
         super(() -> new DraggableListBox<>(
                 subTask -> new SubTaskBox(subTask, taskClickHandler),
@@ -29,7 +33,6 @@ public class TaskBox extends TaskBoxBase {
         ));
         this.onNewSubTask = onNewSubTask;
         this.taskClickHandler = taskClickHandler;
-//        newSubTaskButton.getStyleClass().addAll(Styles.BUTTON_ICON, Styles.FLAT, Styles.SMALL);
         newSubTaskButton.setCursor(Cursor.HAND);
         newSubTaskButton.setOnMouseEntered(event -> newSubTaskButton.setStyle("-fx-icon-color: -color-fg-default;"));
         newSubTaskButton.setOnMouseExited(event -> newSubTaskButton.setStyle("-fx-icon-color: -color-fg-muted;"));
@@ -50,7 +53,32 @@ public class TaskBox extends TaskBoxBase {
 
         if (task != null) {
             newSubTaskButton.setOnMousePressed(event -> onNewSubTask.accept(task));
-            nameBox.setOnMouseClicked(event -> taskClickHandler.accept(event, task));
+            nameText.setOnMouseClicked(event -> taskClickHandler.accept(event, task));
+
+            updateDoneForever(task.isDone(), task.getInterval());
+
+            subs = Subscription.combine(
+                    task.intervalProperty().subscribe(interval -> updateDoneForever(task.isDone(), interval)),
+                    task.isDoneObservable().subscribe(done -> updateDoneForever(done, task.getInterval())),
+                    () -> nameText.setOnMouseClicked(null)
+            );
+        }
+    }
+
+    @Override
+    public void unbind() {
+        super.unbind();
+        subs.unsubscribe();
+    }
+
+    private void updateDoneForever(boolean done, TwigInterval interval) {
+        if (done && interval instanceof TwigInterval.NoRepeat) {
+            nameText.setStrikethrough(true);
+            nameText.setOpacity(0.5);
+        }
+        else {
+            nameText.setStrikethrough(false);
+            nameText.setOpacity(1);
         }
     }
 }
