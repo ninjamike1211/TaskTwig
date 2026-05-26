@@ -304,7 +304,7 @@ public class Task implements TaskInterface {
                 return true;
             }
             case START_ON -> {
-                return today.isAfter(next);
+                return !today.isBefore(next);
             }
             case null -> throw new IllegalStateException("Illegal occurrence pattern (likely null)");
         }

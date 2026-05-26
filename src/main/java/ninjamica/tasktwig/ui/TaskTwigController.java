@@ -668,6 +668,43 @@ public class TaskTwigController {
         return tab;
     }
 
+    private Tab createTaskCategoryTab() {
+        Tab tab = new Tab("Categories");
+        tab.setGraphic(new FontIcon(FontAwesomeSolid.SHAPES));
+
+        taskCategoryListBox = new DraggableListBox<>(
+                category -> {
+                    TaskCategoryBox box = new TaskCategoryBox(category);
+                    box.setOnMouseClicked(event -> {
+                        if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2) {
+                            openTaskCategoryPanel(category);
+                        }
+                    });
+                    return box;
+                },
+                TaskCategoryBox::unbind,
+                Pos.CENTER_LEFT
+        );
+        taskCategoryListBox.setNodeStyle(
+                "-fx-background-color: -color-bg-default;" +
+                "-fx-background-radius: 5;" +
+                "-fx-border-color: -color-border-default;" +
+                "-fx-border-width: 1;" +
+                "-fx-border-radius: 5;" +
+                "-fx-padding: 10"
+        );
+
+        Button addCategoryButton = new Button("Add Category");
+        addCategoryButton.setOnAction(event -> {
+            TaskCategory newCat = new TaskCategory("", Color.WHITE);
+            twig.getTaskCategoryList().add(newCat);
+            openTaskCategoryPanel(newCat);
+        });
+
+        tab.setContent(new VBox(10, addCategoryButton, taskCategoryListBox));
+        return tab;
+    }
+
     public Tab createTaskTab() {
         Tab tab = new Tab("Tasks");
         tab.setGraphic(new FontIcon(FontAwesomeSolid.TASKS));
@@ -707,49 +744,7 @@ public class TaskTwigController {
                 TaskCategoryViewBase::unbind
         );
 
-        Button addButton = new Button("Add LegacyTask");
-        addButton.setOnAction(event -> {
-
-        });
-
-        tab.setContent(new ScrollPane(new VBox(10, addButton, taskListBox)));
-        return tab;
-    }
-
-    private Tab createTaskCategoryTab() {
-        Tab tab = new Tab("Categories");
-        tab.setGraphic(new FontIcon(FontAwesomeSolid.SHAPES));
-
-        taskCategoryListBox = new DraggableListBox<>(
-                category -> {
-                    TaskCategoryBox box = new TaskCategoryBox(category);
-                    box.setOnMouseClicked(event -> {
-                        if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2) {
-                            openTaskCategoryPanel(category);
-                        }
-                    });
-                    return box;
-                },
-                TaskCategoryBox::unbind,
-                Pos.CENTER_LEFT
-        );
-        taskCategoryListBox.setNodeStyle(
-                "-fx-background-color: -color-bg-default;" +
-                "-fx-background-radius: 5;" +
-                "-fx-border-color: -color-border-default;" +
-                "-fx-border-width: 1;" +
-                "-fx-border-radius: 5;" +
-                "-fx-padding: 10"
-        );
-
-        Button addCategoryButton = new Button("Add Category");
-        addCategoryButton.setOnAction(event -> {
-            TaskCategory newCat = new TaskCategory("", Color.WHITE);
-            twig.getTaskCategoryList().add(newCat);
-            openTaskCategoryPanel(newCat);
-        });
-
-        tab.setContent(new VBox(10, addCategoryButton, taskCategoryListBox));
+        tab.setContent(new ScrollPane(new VBox(10, taskListBox)));
         return tab;
     }
 

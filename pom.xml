@@ -154,6 +154,7 @@
                 <artifactId>gluonfx-maven-plugin</artifactId>
                 <version>1.0.28</version>
                 <configuration>
+                    <target>host</target>
                     <mainClass>ninjamica.tasktwig.ui.TaskTwigApplication</mainClass>
                     <attachList>
                         <list>settings, storage, browser</list>

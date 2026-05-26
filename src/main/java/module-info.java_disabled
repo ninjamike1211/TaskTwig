@@ -6,7 +6,6 @@ module ninjamica.tasktwig.tasktwig {
 
     requires transitive javafx.base;
     requires transitive javafx.graphics;
-    requires dropbox.core.sdk;
     requires org.kordamp.ikonli.javafx;
     requires org.kordamp.ikonli.fontawesome6;
     requires com.gluonhq.attach.storage;
@@ -14,7 +13,7 @@ module ninjamica.tasktwig.tasktwig {
     requires com.gluonhq.attach.browser;
     requires com.fasterxml.jackson.core;
     requires it.unimi.dsi.fastutil.core;
-    requires java.desktop;
+    requires dropbox.core.sdk;
 
     exports ninjamica.tasktwig.core;
     exports ninjamica.tasktwig.ui;
